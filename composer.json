@@ -1,0 +1,32 @@
+{
+  "name": "kakuilan/phalwoo",
+  "description": "swoole server frame for phalcon",
+  "keywords": [
+    "swoole","phalcon"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "kakuilan",
+      "email": "kakuilan@163.com"
+    }
+  ],
+  "require": {
+    "monolog/monolog": "^1.22",
+    "phpunit/phpunit": "^6.1"
+  },
+  "require-dev": {
+    "kakuilan/kphplib": "dev-master"
+  },
+  "autoload": {
+    "psr-4": {
+      "Lkk\\Phalwoo\\": "src"
+    }
+  },
+  "repositories": {
+    "packagist": {
+      "type": "composer",
+      "url": "https://packagist.phpcomposer.com"
+    }
+  }
+}
