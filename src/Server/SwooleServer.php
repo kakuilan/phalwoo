@@ -97,7 +97,8 @@ class SwooleServer extends LkkService {
      * 设置redis队列对象
      */
     protected function setRedQueue() {
-        //TODO
+        //默认使用工作流队列,子类可自行更改
+        $this->redqueue = RedisQueue::getQueueObject(RedisQueue::APP_WORKFLOW_QUEUE_NAME, []);
     }
 
 

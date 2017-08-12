@@ -33,6 +33,102 @@ class RedisQueue extends LkkRedisQueueService {
     }
 
 
+    /**
+     * 获取默认的redis配置
+     * @return array
+     */
+    public static function getDefultRedisCnf() {
+        return [
+            'host' => '127.0.0.1',
+            'port' => 6379,
+            'password' => null,
+        ];
+    }
+
+
+    /**
+     * 获取队列实例化对象
+     * @param string $queueName 队列名
+     * @param array $conf 队列初始化配置
+     *
+     * @return RedisQueue|mixed
+     */
+    public static function getQueueObject($queueName, $conf=[]) {
+        if(empty($conf)) $conf = [
+            'redisConf' => self::getDefultRedisCnf(),
+            'transTime' => 30,
+        ];
+        $key = md5($queueName . self::APP_WORKFLOW_QUEUE_NAME . json_encode($conf));
+
+        if(!isset(self::$queues[$key]) || empty(self::$queues[$key])) {
+            $queue = new RedisQueue($conf);
+            $queue->newQueue($queueName);
+            self::$queues[$key] = $queue;
+        }else{
+            $queue = self::$queues[$key];
+        }
+
+        return $queue;
+    }
+
+
+
+    /**
+     * 快速添加单个消息到工作流队列
+     * @param array $item 消息:例如['type'=>'register', 'data'=>[]]
+     * @param array $conf 配置
+     * @return array
+     */
+    public static function quickAddItem2WorkflowMq($item=[], $conf=[]) {
+        $queue = self::getQueueObject(self::APP_WORKFLOW_QUEUE_NAME, $conf);
+        $res = $queue->push($item);
+        $data = [
+            'result' => $res,
+            'error' => $queue->error,
+        ];
+
+        return $data;
+    }
+
+
+    /**
+     * 快速添加单个消息到APP通知队列
+     * @param array $item 消息:例如['type'=>'msg', 'data'=>[]],type类型有msg站内信,sms短信,mail邮件,getui个推,other其他
+     * @param array $conf 配置
+     * @return array
+     */
+    public static function quickAddItem2AppNotifyMq($item=[], $conf=[]) {
+        $queue = self::getQueueObject(self::APP_NOTIFY_QUEUE_NAME, $conf);
+        $res = $queue->push($item);
+        $data = [
+            'result' => $res,
+            'error' => $queue->error,
+        ];
+
+        return $data;
+    }
+
+
+    /**
+     * 快速添加多个消息到APP用户通知队列
+     * @param array $items 消息数组
+     * @param array $conf 配置
+     * @return array
+     */
+    public static function quickAddMultItem2AppNotifyMq($items=[], $conf=[]) {
+        $queue = self::getQueueObject(self::APP_NOTIFY_QUEUE_NAME, $conf);
+        $res = $queue->pushMulti($items);
+        $data = [
+            'result' => $res,
+            'error' => $queue->error,
+        ];
+
+        return $data;
+    }
+
+
+
+
 
 
 
