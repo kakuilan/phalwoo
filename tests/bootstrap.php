@@ -8,5 +8,8 @@
  */
 
 
-$loader = require __DIR__ .'/../vendor/autoload.php';
+define('DS', str_replace('\\', '/', DIRECTORY_SEPARATOR));
+define('PS', PATH_SEPARATOR);
 
+$loader = require __DIR__ .'/../vendor/autoload.php';
+$loader->addPsr4('Tests\\', __DIR__);

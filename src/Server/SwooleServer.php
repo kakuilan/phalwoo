@@ -40,9 +40,9 @@ class SwooleServer extends LkkService {
         'reload',
         'kill',
     ];
-    private static $cliOperate; //当前命令操作
-    private static $daemonize; //是否以守护进程启动
-    private static $pidFile;   //pid文件路径
+    protected static $cliOperate; //当前命令操作
+    protected static $daemonize; //是否以守护进程启动
+    protected static $pidFile;   //pid文件路径
 
 
     /**
@@ -502,10 +502,10 @@ class SwooleServer extends LkkService {
         }
 
         $this->setGlobal($request);
-        $requestId = self::getRequestUuid();
         self::setSwooleRequest($request);
 
-        //处理请求,留给子类具体去处理
+        //处理请求
+        //TODO 留给子类具体去处理
         //ob_start();
         /*try {
             $resStr = date('Y-m-d H:i:s') . ' Hello World.';
@@ -527,6 +527,9 @@ class SwooleServer extends LkkService {
      * @param $response
      */
     public function afterResponse($request, $response) {
+        $requestId = self::getRequestUuid();
+        self::unsetSwooleRequest($requestId);
+
         $this->unsetGlobal();
         unset($request);
         unset($response);
