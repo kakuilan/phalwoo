@@ -8,7 +8,12 @@
  */
 
 
+define('DS', str_replace('\\', '/', DIRECTORY_SEPARATOR));
+define('PS', PATH_SEPARATOR);
+
 $loader = require __DIR__ .'/../../vendor/autoload.php';
+$loader->addPsr4('Tests\\', dirname(__DIR__));
+
 $conf = require_once 'config.php';
 Tests\Server\MyServer::parseCommands();
 Tests\Server\MyServer::instance()->setConf($conf)->run();
