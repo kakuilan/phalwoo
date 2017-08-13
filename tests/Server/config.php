@@ -79,7 +79,7 @@ return [
             'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
             'message' => [
                 'title' => 'timerTest',
-                'callback' => ['\Kswoole\Server\Task','dumpTest'],
+                'callback' => ['\Tests\Server\Task','dumpTest'],
                 'params' => ['timerTest-hah'],
             ]
         ],
