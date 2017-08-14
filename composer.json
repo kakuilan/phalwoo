@@ -2,13 +2,16 @@
   "name": "kakuilan/phalwoo",
   "description": "swoole server frame for phalcon",
   "keywords": [
-    "swoole","phalcon"
+    "swoole",
+    "phalcon"
   ],
+  "homepage": "https://github.com/kakuilan/phalwoo",
   "license": "MIT",
   "authors": [
     {
       "name": "kakuilan",
-      "email": "kakuilan@163.com"
+      "email": "kakuilan@163.com",
+      "homepage": "https://github.com/kakuilan"
     }
   ],
   "require": {
