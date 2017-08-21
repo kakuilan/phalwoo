@@ -21,7 +21,8 @@ class MyServer extends SwooleServer {
 
 
     public function onRequest($request, $response) {
-        parent::onRequest($request, $response);
+        $sendRes = parent::onRequest($request, $response);
+        if(is_bool($sendRes)) return $sendRes;
 
         try {
             $resStr = date('Y-m-d H:i:s') . ' Hello World.';
