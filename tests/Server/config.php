@@ -19,7 +19,7 @@ return [
     //http服务监听
     'http_server' => [
         'host' => '0.0.0.0',
-        'port' => 80, //6666
+        'port' => 8090, //6666
     ],
 
 
