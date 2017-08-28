@@ -15,6 +15,11 @@ class ServerConst {
     //系统任务类型-定时任务
     const SERVER_TASK_TIMER = 500;
 
+    //系统任务类型-工作流任务-session数据入库
+    const SERVER_TASK_WORKFLOW_SESSION = 501;
+
+
+
 
 
 }

@@ -19,7 +19,7 @@ return [
     //http服务监听
     'http_server' => [
         'host' => '0.0.0.0',
-        'port' => 6666,
+        'port' => 80, //6666
     ],
 
 
@@ -76,11 +76,19 @@ return [
     //定时任务
     'timer_tasks' => [
         [
-            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
+            /*'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
             'message' => [
                 'title' => 'timerTest',
                 'callback' => ['\Tests\Server\Task','dumpTest'],
                 'params' => ['timerTest-hah'],
+            ]*/
+        ],
+        [
+            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
+            'message' => [
+                'title' => 'sessionTest',
+                'callback' => ['\Tests\Server\Task','sessionTest'],
+                'params' => [],
             ]
         ],
     ],

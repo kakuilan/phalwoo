@@ -11,6 +11,7 @@
 namespace Tests\Server;
 
 use \Lkk\LkkService;
+use Tests\Server\WorkFlowSession;
 
 class Task extends LkkService {
 
@@ -20,5 +21,14 @@ class Task extends LkkService {
         print_r($msg);
     }
 
+
+    public function sessionTest() {
+        $sessionWork = WorkFlowSession::getInstance();
+        if($sessionWork->chkDoing()) {
+            echo "session工作流正在处理... \r\n";
+        }else{
+            $sessionWork->writeSession();
+        }
+    }
 
 }

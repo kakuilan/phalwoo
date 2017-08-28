@@ -24,9 +24,8 @@ class TimerTaskManager extends LkkService {
     public function __construct(array $vars = []) {
         parent::__construct($vars);
 
-        //TODO读数据表中的任务,加进来
+        //TODO 读数据表中的任务,加进来
 
-        $this->startTimerTasks();
     }
 
 
@@ -45,7 +44,7 @@ class TimerTaskManager extends LkkService {
     public function startTimerTasks() {
         //定时器/秒
         $this->deliveryTimerTask();
-        $this->timerId = swoole_timer_tick(1000, function () {
+        $this->timerId = swoole_timer_tick(200, function () {
             $this->deliveryTimerTask();
         });
     }

@@ -20,9 +20,9 @@ class SwooleServer extends LkkService {
     public $conf; //服务配置
     private $server; //swoole_server对象
     private $events; //swoole_server事件
-    private $requests; //请求资源
-    private $splqueue; //标准库队列,非持久化工作
-    private $redqueue; //redis持久化队列
+
+    private $inerqueue; //内部队列,非持久化工作
+    private $rediqueue; //redis持久化队列
 
     private $servName; //服务名
     private $listenIP; //监听IP
@@ -57,6 +57,15 @@ class SwooleServer extends LkkService {
 
 
     /**
+     * 获取启动的服务容器
+     * @return mixed
+     */
+    public static function getBoot() {
+        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance;
+    }
+
+
+    /**
      * 获取SWOOLE服务
      * @return mixed
      */
@@ -77,10 +86,8 @@ class SwooleServer extends LkkService {
     /**
      * 设置内置队列对象
      */
-    private function setSplQueue() {
-        $this->splqueue = new \SplQueue();
-        //设置迭代后数据删除
-        $this->splqueue->setIteratorMode(\SplDoublyLinkedList::IT_MODE_FIFO | \SplDoublyLinkedList::IT_MODE_DELETE);
+    private function setInerQueue() {
+        $this->inerqueue = new \Swoole\Channel(256 * 1024 * 1024);
     }
 
 
@@ -88,17 +95,17 @@ class SwooleServer extends LkkService {
      * 获取内置队列对象
      * @return mixed
      */
-    public static function getSplQueue() {
-        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->splqueue;
+    public static function getInerQueue() {
+        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->inerqueue;
     }
 
 
     /**
      * 设置redis队列对象
      */
-    protected function setRedQueue() {
+    private function setRediQueue() {
         //默认使用工作流队列,子类可自行更改
-        $this->redqueue = RedisQueue::getQueueObject(RedisQueue::APP_WORKFLOW_QUEUE_NAME, []);
+        $this->rediqueue = RedisQueue::getQueueObject(RedisQueue::APP_WORKFLOW_QUEUE_NAME, []);
     }
 
 
@@ -106,59 +113,8 @@ class SwooleServer extends LkkService {
      * 获取redis队列对象
      * @return mixed
      */
-    public static function getRedQueue() {
-        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->redqueue;
-    }
-
-
-    /**
-     * 获取请求的UUID
-     * @return string
-     */
-    public static function getRequestUuid() {
-        $arr = array_merge($_GET, $_COOKIE, $_SERVER);
-        sort($arr);
-        $res = isset($_SERVER['REQUEST_TIME_FLOAT']) ?
-            (sprintf('%.0f', $_SERVER['REQUEST_TIME_FLOAT'] * 1000000) .crc32(md5(serialize($arr))))
-            : md5(serialize($arr));
-        return $res;
-    }
-
-
-    /**
-     * 设置request请求对象
-     * @param $request
-     */
-    protected function setSwooleRequest($request) {
-        $requestId = self::getRequestUuid();
-        $this->requests[$requestId] = $request;
-    }
-
-
-    /**
-     * 取消request请求对象
-     * @param string $requestId
-     */
-    protected function unsetSwooleRequest($requestId='') {
-        if(empty($requestId)) $requestId = self::getRequestUuid();
-        unset($this->requests[$requestId]);
-    }
-
-
-    /**
-     * 获取request对象
-     * @param string $requestId
-     *
-     * @return null
-     */
-    protected static function getSwooleRequest($requestId='') {
-        $res = null;
-        if(is_object(self::$instance) && !empty(self::$instance)) {
-            if(empty($requestId)) $requestId = self::getRequestUuid();
-            $res = isset(self::$instance->requests[$requestId]) ? self::$instance->requests[$requestId] : null;
-        }
-
-        return $res;
+    public static function getRediQueue() {
+        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->rediqueue;
     }
 
 
@@ -241,10 +197,10 @@ class SwooleServer extends LkkService {
     public static function setProcessTitle($title) {
         // >=php 5.5
         if (function_exists('cli_set_process_title')) {
-            @cli_set_process_title($title);
+            cli_set_process_title($title);
         } // Need proctitle when php<=5.5 .
         else {
-            @swoole_set_process_name($title);
+            swoole_set_process_name($title);
         }
     }
 
@@ -373,9 +329,6 @@ class SwooleServer extends LkkService {
         self::setProcessTitle($this->servName.'-Master');
         self::setMasterPid($serv->master_pid, $serv->manager_pid);
 
-        $this->setSplQueue();
-        $this->setRedQueue();
-
         $this->eventFire(__FUNCTION__);
         echo "Master Start...\r\n";
 
@@ -439,7 +392,7 @@ class SwooleServer extends LkkService {
         //最后一个worker处理启动定时器
         if ($workerId == $this->conf['server_conf']['worker_num'] - 1) {
             //启动定时器任务
-            $this->timerTaskManager = new TimerTaskManager(['timerTasks'=>$this->conf['timer_tasks']]);
+            $this->timerTaskManager->startTimerTasks();
         }
 
         $this->eventFire(__FUNCTION__);
@@ -501,21 +454,10 @@ class SwooleServer extends LkkService {
             return $response->end();
         }
 
-        $this->setGlobal($request);
-        self::setSwooleRequest($request);
-
+        $_REQUEST = $_SESSION = $_COOKIE = $_FILES = $_POST = $_SERVER = $_GET = [];
         //处理请求
         //TODO 留给子类具体去处理
-        //ob_start();
-        /*try {
-            $resStr = date('Y-m-d H:i:s') . ' Hello World.';
-        } catch (\Exception $e) {
-            $resStr = $e->getMessage();
-        }
-        //$result = ob_get_contents();
-        //ob_end_clean();
-        $response->end($resStr);
-        self::unsetSwooleRequest($requestId);*/
+
 
         return $this;
     }
@@ -527,10 +469,6 @@ class SwooleServer extends LkkService {
      * @param $response
      */
     public function afterResponse($request, $response) {
-        $requestId = self::getRequestUuid();
-        self::unsetSwooleRequest($requestId);
-
-        $this->unsetGlobal();
         unset($request);
         unset($response);
     }
@@ -564,7 +502,7 @@ class SwooleServer extends LkkService {
     public function onTask($serv, $taskId, $fromId, $taskData) {
         self::setProcessTitle($this->servName.'-Tasker');
         $this->eventFire(__FUNCTION__);
-        echo "on Task...\r\n";
+        //echo "on Task...\r\n";
 
         //检查任务类型
         if(is_array($taskData) && isset($taskData['type'])) {
@@ -574,6 +512,7 @@ class SwooleServer extends LkkService {
                 case ServerConst::SERVER_TASK_TIMER : //定时任务
                     call_user_func_array($taskData['message']['callback'], $taskData['message']['params']);
                     break;
+
             }
         }
 
@@ -591,7 +530,7 @@ class SwooleServer extends LkkService {
      */
     public function onFinish($serv, $taskId, $taskData) {
         $this->eventFire(__FUNCTION__);
-        echo "on Finish...\r\n";
+        //echo "on Finish...\r\n";
 
         return $this;
     }
@@ -776,9 +715,14 @@ class SwooleServer extends LkkService {
      */
     public function startServer() {
         $this->bindEvents();
-        $this->server->start();
+        $this->setInerQueue();
+        $this->setRediQueue();
+
+        //设置定时器
+        $this->timerTaskManager = new TimerTaskManager(['timerTasks'=>$this->conf['timer_tasks']]);
 
         echo("Service $this->servName start success\r\n");
+        $this->server->start();
 
         return $this;
     }
@@ -816,58 +760,6 @@ class SwooleServer extends LkkService {
     }
 
 
-    /**
-     * 设置全局变量[将原始请求信息转换到PHP超全局变量中]
-     * @param mixed $request request对象
-     */
-    public function setGlobal($request) {
-        $_REQUEST = $_SESSION = $_COOKIE = $_FILES = $_POST = $_SERVER = $_GET = [];
-
-        if (isset($request->get)) $_GET = $request->get;
-        if (isset($request->post)) $_POST = $request->post;
-        if (isset($request->files)) $_FILES = $request->files;
-        if (isset($request->cookie)) $_COOKIE = $request->cookie;
-        if (isset($request->server)) $_SERVER = $request->server;
-
-        //构造url请求路径,phalcon获取到$_GET['_url']时会定向到对应的路径，否则请求路径为'/'
-        $_GET['_url'] = $request->server['request_uri'];
-
-        $_REQUEST = array_merge($_GET, $_POST);
-
-        //todo: necessary?
-        foreach ($_SERVER as $key => $value) {
-            unset($_SERVER[$key]);
-            $_SERVER[strtoupper($key)] = $value;
-        }
-        $_REQUEST = array_merge($_GET, $_POST, $_COOKIE);
-        $_SERVER['REQUEST_URI'] = $request->server['request_uri'];
-
-        //将HTTP头信息赋值给$_SERVER超全局变量
-        foreach ($request->header as $key => $value) {
-            $_key = 'HTTP_' . strtoupper(str_replace('-', '_', $key));
-            $_SERVER[$_key] = $value;
-        }
-        $_SERVER['REMOTE_ADDR'] = $request->server['remote_addr'];
-
-        // swoole fix 初始化一些变量, 下面这些变量在进入真实流程时是无效的
-        $_SERVER['PHP_SELF']        = '/index.php';
-        $_SERVER['SCRIPT_NAME']     = '/index.php';
-        $_SERVER['SCRIPT_FILENAME'] = '/index.php';
-        $_SERVER['SERVER_ADDR']     = '127.0.0.1';
-        $_SERVER['SERVER_NAME']     = 'localhost';
-
-        //TODO
-        //$_SESSION = $this->load($sessid);
-    }
-
-
-    /**
-     * 取消全局变量[重置为空]
-     */
-    public function unsetGlobal() {
-        $_REQUEST = $_SESSION = $_COOKIE = $_FILES = $_POST = $_SERVER = $_GET = [];
-    }
-
 
     /**
      * 获取当前服务器ip
@@ -896,7 +788,6 @@ class SwooleServer extends LkkService {
 
         return $currentIP;
     }
-
 
 
 }

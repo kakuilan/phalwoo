@@ -26,3 +26,20 @@ server {
     }
 }
 ```
+
+$ret->send();
+$response->end($ret->getContent());
+
+session前缀_PHCR _PHCOOKIE_ 
+压测性能不行,找原因:  
+`1 redis写入问题  
+
+TODO:  
+redis长连接  
+db长连接  
+定时器优化  
+Cmponent 组件
+
+
+
+            
