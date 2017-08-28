@@ -510,7 +510,14 @@ class SwooleServer extends LkkService {
                 case '' :default :
                     break;
                 case ServerConst::SERVER_TASK_TIMER : //定时任务
-                    call_user_func_array($taskData['message']['callback'], $taskData['message']['params']);
+                    if(is_array($taskData['message']['callback'])) {
+                        $object = new $taskData['message']['callback'][0];
+                        $method = $taskData['message']['callback'][1];
+                        call_user_func_array([$object, $object], $taskData['message']['params']);
+                    }else{
+                        call_user_func_array($taskData['message']['callback'], $taskData['message']['params']);
+                    }
+
                     break;
 
             }
