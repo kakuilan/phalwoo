@@ -236,13 +236,13 @@ class Redis extends Adapter {
         $this->close();*/
 
         $this->close();
-        $a = $this->getWritable();
+        /*$a = $this->getWritable();
         $b = !empty($this->_sessionData);
         $c = $this->isUpdate();
-        $d = $this->_lefttime<=120;
+        $d = $this->_lefttime<=120;*/
 
         $writable = ($this->getWritable() && !empty($this->_sessionData) && ($this->isUpdate() || $this->_lefttime<=120) );
-        var_dump('$writable', $writable, $a, $b, $c, $d);
+        //var_dump('$writable', $writable, $a, $b, $c, $d);
         if(!$writable) {
             return false;
         }
