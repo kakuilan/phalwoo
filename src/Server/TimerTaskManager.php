@@ -45,14 +45,14 @@ class TimerTaskManager extends LkkService {
      */
     protected function initTaskData(array &$taskData) {
         $taskProperty = [
-            'run_startime'      => 0,
-            'run_nexttime'      => 0,
-            'run_lasttime'      => 0,
-            'run_endtime'       => 0,
-            'run_interval_time' => 0,
-            'run_delay_time'    => 0,
             'run_max_exec'      => 0,
             'run_now_exec'      => 0,
+            'run_interval_time' => 0,
+            'run_delay_time'    => 0,
+            'run_endtime'       => 0,
+            'run_startime'      => CommonHelper::getMillisecond(),
+            'run_nexttime'      => 0,
+            'run_lasttime'      => 0,
         ];
 
 
