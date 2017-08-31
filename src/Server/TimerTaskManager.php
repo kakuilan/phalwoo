@@ -11,6 +11,7 @@
 namespace Lkk\Phalwoo\Server;
 
 use Lkk\LkkService;
+use Lkk\Helpers\CommonHelper;
 
 class TimerTaskManager extends LkkService {
 
@@ -35,6 +36,26 @@ class TimerTaskManager extends LkkService {
      */
     public function getTimerId() {
         return $this->timerId;
+    }
+
+
+    /**
+     * 初始化[单个]任务数据
+     * @param array $taskData
+     */
+    protected function initTaskData(array &$taskData) {
+        $taskProperty = [
+            'run_startime'      => 0,
+            'run_nexttime'      => 0,
+            'run_lasttime'      => 0,
+            'run_endtime'       => 0,
+            'run_interval_time' => 0,
+            'run_delay_time'    => 0,
+            'run_max_exec'      => 0,
+            'run_now_exec'      => 0,
+        ];
+
+
     }
 
 

@@ -11,6 +11,7 @@
 namespace Lkk\Phalwoo\Server;
 
 use Lkk\LkkService;
+use Lkk\Helpers\CommonHelper;
 use Lkk\Helpers\ValidateHelper;
 
 
@@ -28,6 +29,7 @@ class SwooleServer extends LkkService {
     private $listenIP; //监听IP
     private $listenPort; //监听端口
 
+
     //定时任务管理器
     private $timerTaskManager;
 
@@ -43,7 +45,7 @@ class SwooleServer extends LkkService {
     protected static $cliOperate; //当前命令操作
     protected static $daemonize; //是否以守护进程启动
     protected static $pidFile;   //pid文件路径
-
+    protected static $startTime; //服务启动时间,毫秒
 
     /**
      * 构造函数
@@ -131,6 +133,8 @@ class SwooleServer extends LkkService {
      * 解析CLI命令参数
      */
     public static function parseCommands() {
+        self::$startTime = CommonHelper::getMillisecond();
+
         if (php_sapi_name() != 'cli') {
             exit("only run in command line mode \r\n");
         }
@@ -146,6 +150,15 @@ class SwooleServer extends LkkService {
             self::cliUsage();
             exit(1);
         }
+    }
+
+
+    /**
+     * 获取服务启动时间,毫秒
+     * @return mixed
+     */
+    public static function getServerStartTime() {
+        return self::$startTime;
     }
 
 
