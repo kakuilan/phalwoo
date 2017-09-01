@@ -44,19 +44,37 @@ class TimerTaskManager extends LkkService {
      * @param array $taskData
      */
     protected function initTaskData(array &$taskData) {
+        //以下涉及时间的都为毫秒
         $taskProperty = [
-            'run_max_exec'      => 0,
-            'run_now_exec'      => 0,
-            'run_interval_time' => 0,
-            'run_delay_time'    => 0,
-            'run_endtime'       => 0,
-            'run_startime'      => CommonHelper::getMillisecond(),
-            'run_nexttime'      => 0,
-            'run_lasttime'      => 0,
+            'run_max_exec'      => 0, //最多执行次数,0为无限制
+            'run_now_exec'      => 0, //现已执行次数
+            'run_interval_time' => 0, //间隔时间,int类型:<259200000(30天的毫秒)或具体某个时间戳;string类型:crontab格式,会把解析结果保存到下面字段
+            'run_crontab_time'  => [], //['minute'=>[],'hour'=>[],'day'=>[],'month'=>[],'week'=>[]]
+            'run_delay_time'    => 0, //延迟执行时间
+            'run_endtime'       => 0, //结束时间
+            'run_startime'      => CommonHelper::getMillisecond(), //开始时间
+            'run_nexttime'      => 0, //下次执行时间
+            'run_lasttime'      => 0, //上次执行时间
         ];
 
-
     }
+
+
+    /**
+     * 获取日期数供crontab用
+     * @return array
+     */
+    public static function getDates4Cron() {
+        $dates = explode('-', date('i-G-j-n-w'));
+        return [
+            'minute'    => $dates[0],
+            'hour'      => $dates[1],
+            'day'       => $dates[2],
+            'month'     => $dates[3],
+            'week'      => $dates[4],
+        ];
+    }
+
 
 
     /**
