@@ -12,6 +12,7 @@ namespace Lkk\Phalwoo\Server;
 
 use Lkk\LkkService;
 use Lkk\Helpers\CommonHelper;
+use Cron\CronExpression;
 
 class TimerTaskManager extends LkkService {
 
@@ -48,16 +49,24 @@ class TimerTaskManager extends LkkService {
         $taskProperty = [
             'run_max_exec'      => 0, //最多执行次数,0为无限制
             'run_now_exec'      => 0, //现已执行次数
-            'run_interval_time' => 0, //间隔时间,int类型:<259200000(30天的毫秒)或具体某个时间戳;string类型:crontab格式,会把解析结果保存到下面字段
-            'run_crontab_time'  => [], //['minute'=>[],'hour'=>[],'day'=>[],'month'=>[],'week'=>[]]
+            'run_interval_time' => 0, //间隔时间,int类型:<259200000(30天的毫秒)或具体某个时间戳
+            'run_crontab_time'  => '', //string类型:crontab格式,该规则会比run_interval_time优先
             'run_delay_time'    => 0, //延迟执行时间
             'run_endtime'       => 0, //结束时间
-            'run_startime'      => CommonHelper::getMillisecond(), //开始时间
+            'run_startime'      => 0, //开始时间
             'run_nexttime'      => 0, //下次执行时间
             'run_lasttime'      => 0, //上次执行时间
         ];
 
+        $taskData = array_merge($taskData, $taskProperty);
+        $now = CommonHelper::getMillisecond();
+
+
+
+
     }
+
+
 
 
     /**
