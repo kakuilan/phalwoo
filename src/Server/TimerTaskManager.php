@@ -98,7 +98,7 @@ class TimerTaskManager extends LkkService {
         $taskData = array_merge($taskProperty, $taskData);
 
         while (true) {
-            //检查cron
+            //检查cron规则
             if(is_string($taskData['run_crontab_time']) && CronExpression::isValidExpression($taskData['run_crontab_time'])) {
                 $taskData['run_crontab_time'] = trim($taskData['run_crontab_time']);
                 $cronExpre = $this->getCronExpre($taskData['run_crontab_time']);

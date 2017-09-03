@@ -10,6 +10,7 @@
 
 namespace Tests\Server;
 
+use Lkk\Helpers\CommonHelper;
 use Phalcon\Mvc\Micro;
 use Lkk\Phalwoo\Server\SwooleServer;
 use Lkk\Phalwoo\Phalcon\Di as PwDi;
@@ -20,11 +21,23 @@ use Lkk\Phalwoo\Phalcon\Session\Adapter\Redis as PwSession;
 use Lkk\Phalwoo\Server\DenyUserAgent;
 use Phalcon\Crypt as PhCrypt;
 
+use Lkk\Phalwoo\Server\Component\Log\SwooleLogger;
+use Lkk\Phalwoo\Server\Component\Log\Handler\AsyncStreamHandler;
+
 class MyServer extends SwooleServer {
 
+    private $logger;
 
     public function __construct(array $vars = []) {
         parent::__construct($vars);
+
+        //logger test
+        $logName = 'serlog';
+        $logFile = __DIR__ .'/log/serlog.log';
+
+        $this->logger = new SwooleLogger($logName, [], []);
+        $this->logger->setDefaultHandler($logFile);
+
     }
 
 
@@ -32,6 +45,13 @@ class MyServer extends SwooleServer {
         $response->header('X-Powered-By', ($this->conf['server_name'] ?? 'LkkServ'));
         $response->header('Server', ($this->conf['server_name'] ?? 'LkkServ'));
         //var_dump('swoole-request:------------', $request);
+
+        $this->logger->info('request:', [
+            'header' => $request->header ?? '',
+            'server' => $request->server ?? '',
+            'get' => $request->get ?? '',
+            'post' => $request->post ?? '',
+        ]);
 
         $sendRes = parent::onRequest($request, $response);
         if(is_bool($sendRes)) return $sendRes;

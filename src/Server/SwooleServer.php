@@ -13,7 +13,8 @@ namespace Lkk\Phalwoo\Server;
 use Lkk\LkkService;
 use Lkk\Helpers\CommonHelper;
 use Lkk\Helpers\ValidateHelper;
-
+use Phalcon\Di\FactoryDefault\Cli as CliDi;
+use Phalcon\Events\Manager as PhEventManager;
 
 class SwooleServer extends LkkService {
 
@@ -21,6 +22,7 @@ class SwooleServer extends LkkService {
     public $conf; //服务配置
     private $server; //swoole_server对象
     private $events; //swoole_server事件
+    private $serverDi; //服务器的DI容器
 
     private $inerqueue; //内部队列,非持久化工作
     private $rediqueue; //redis持久化队列
@@ -82,6 +84,15 @@ class SwooleServer extends LkkService {
      */
     public static function getTimerTaskManager() {
         return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->timerTaskManager;
+    }
+
+
+    /**
+     * 获取服务器的DI容器
+     * @return mixed
+     */
+    public static function getServerDi() {
+        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->serverDi;
     }
 
 
@@ -499,6 +510,11 @@ class SwooleServer extends LkkService {
         $this->eventFire(__FUNCTION__);
         echo "on Close:[{$fromId}]...\r\n";
 
+        //写日志
+        $di = SwooleServer::getServerDi();
+        $eventManager = $di->get('eventsManager');
+        $eventManager->fire('SwooleServer:onClose', $this);
+
         return $this;
     }
 
@@ -742,6 +758,9 @@ class SwooleServer extends LkkService {
 
         //设置定时器
         $this->timerTaskManager = new TimerTaskManager(['timerTasks'=>$this->conf['timer_tasks']]);
+
+        //设置DI容器
+        $this->serverDi = new CliDi();
 
         echo("Service $this->servName start success\r\n");
         $this->server->start();
