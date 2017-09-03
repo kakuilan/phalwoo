@@ -26,10 +26,16 @@ use Lkk\Phalwoo\Server\Component\Log\Handler\AsyncStreamHandler;
 
 class MyServer extends SwooleServer {
 
-    private $logger;
+    public $logger;
 
     public function __construct(array $vars = []) {
         parent::__construct($vars);
+
+    }
+
+
+    public function onStart($serv) {
+        parent::onStart($serv);
 
         //logger test
         $logName = 'serlog';
@@ -37,6 +43,9 @@ class MyServer extends SwooleServer {
 
         $this->logger = new SwooleLogger($logName, [], []);
         $this->logger->setDefaultHandler($logFile);
+
+        //坑$this不是外面的MyServer
+        var_dump('onStart $this', $this);
 
     }
 
@@ -46,12 +55,17 @@ class MyServer extends SwooleServer {
         $response->header('Server', ($this->conf['server_name'] ?? 'LkkServ'));
         //var_dump('swoole-request:------------', $request);
 
-        $this->logger->info('request:', [
+        //坑$this不是外面的MyServer
+        $logg = SwooleServer::getProperty('logger');
+        var_dump('onRequest $this', $this->logger, $logg, $this);
+
+        /*$this->logger->info('request:', [
             'header' => $request->header ?? '',
             'server' => $request->server ?? '',
             'get' => $request->get ?? '',
             'post' => $request->post ?? '',
-        ]);
+        ]);*/
+
 
         $sendRes = parent::onRequest($request, $response);
         if(is_bool($sendRes)) return $sendRes;

@@ -97,6 +97,23 @@ class SwooleServer extends LkkService {
 
 
     /**
+     * 获取属性
+     * @param $name
+     *
+     * @return null
+     */
+    public static function getProperty($name) {
+        if(is_object(self::$instance)) {
+            if(isset(self::$instance->$name) || array_key_exists($name, get_class_vars(get_class(self::$instance)))) {
+                return self::$instance->$name;
+            }
+        }
+
+        return null;
+    }
+
+
+    /**
      * 设置内置队列对象
      */
     private function setInerQueue() {
@@ -513,7 +530,7 @@ class SwooleServer extends LkkService {
         //写日志
         $di = SwooleServer::getServerDi();
         $eventManager = $di->get('eventsManager');
-        $eventManager->fire('SwooleServer:onClose', $this);
+        $eventManager->fire('swooleserver:onClose', $this);
 
         return $this;
     }

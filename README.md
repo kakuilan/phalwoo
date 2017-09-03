@@ -39,6 +39,7 @@ Cmponent 组件
 log eventsManager  
 redis长连接  
 db长连接   
+获取内存地址  
 
 
 连接池参考Promise   

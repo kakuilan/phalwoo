@@ -65,6 +65,9 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
         $this->maxRecords = SwooleLogger::$maxRecords;
 
         $this->createDir();
+        $this->bindServerStopEvent();
+
+
     }
 
 
@@ -246,7 +249,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
         $di = SwooleServer::getServerDi();
         $logger = $this;
         $eventManager = $di->get('eventsManager');
-        $eventManager->attach('SwooleServer:onClose', function () use($logger) {
+        $eventManager->attach('swooleserver:onClose', function () use($logger) {
             echo "event callback\r\n";
             $logger->flush();
         });
