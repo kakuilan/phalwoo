@@ -526,10 +526,12 @@ class SwooleServer extends LkkService {
                     if(is_array($taskData['message']['callback'])) {
                         $object = new $taskData['message']['callback'][0];
                         $method = $taskData['message']['callback'][1];
-                        call_user_func([$object, $method], $taskData['message']['params']);
+                        //call_user_func([$object, $method], $taskData['message']['params']);
                     }else{
-                        call_user_func_array($taskData['message']['callback'], $taskData['message']['params']);
+                        //call_user_func_array($taskData['message']['callback'], $taskData['message']['params']);
                     }
+
+                    call_user_func_array($taskData['message']['callback'], $taskData['message']['params']);
 
                     break;
 

@@ -76,12 +76,31 @@ return [
     //定时任务
     'timer_tasks' => [
         [
-            /*'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
+            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
             'message' => [
                 'title' => 'timerTest',
                 'callback' => ['\Tests\Server\Task','dumpTest'],
-                'params' => ['timerTest-hah'],
-            ]*/
+                'params' => ['timerTest'],
+            ],
+            'run_interval_time' => 1,
+        ],
+        [
+            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
+            'message' => [
+                'title' => 'cronTimer',
+                'callback' => ['\Tests\Server\Task','crontTimerTest'],
+                'params' => ['cronTimer'],
+            ],
+            'run_crontab_time' => '*/1 * * * *',
+        ],
+        [
+            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
+            'message' => [
+                'title' => 'onceTimer',
+                'callback' => ['\Tests\Server\Task','onceTimerTest'],
+                'params' => ['onceTimer'],
+            ],
+            'run_interval_time' => '2017-09-03 14:13:01',
         ],
         [
             'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
@@ -89,7 +108,8 @@ return [
                 'title' => 'sessionTest',
                 'callback' => ['\Tests\Server\Task','sessionTest'],
                 'params' => [],
-            ]
+            ],
+            'run_interval_time' => 0.2,
         ],
     ],
 
