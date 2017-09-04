@@ -23,7 +23,9 @@
     "mtdowling/cron-expression": "^1.2"
   },
   "require-dev": {
-    "kakuilan/kphplib": "dev-master"
+    "kakuilan/kphplib": "dev-master",
+    "phalcon/ide-stubs": "*",
+    "eaglewu/swoole-ide-helper": "dev-master"
   },
   "autoload": {
     "psr-4": {

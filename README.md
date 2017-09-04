@@ -27,6 +27,11 @@ server {
 }
 ```
 
+部署时去掉:  
+phalcon/ide-stubs
+eaglewu/swoole-ide-helper  
+
+
 $ret->send();
 $response->end($ret->getContent());
 
