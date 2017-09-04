@@ -48,6 +48,8 @@ db长连接
 
 
 连接池参考Promise   
+https://github.com/reactphp/promise  
+https://github.com/guzzle/promises  
 cat-sys/cat-core  
 Hprose\Promise  
 Prophecy  

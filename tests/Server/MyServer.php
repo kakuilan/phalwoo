@@ -45,7 +45,7 @@ class MyServer extends SwooleServer {
         $this->logger->setDefaultHandler($logFile);
 
         //坑$this不是外面的MyServer
-        var_dump('onStart $this', $this);
+        //var_dump('onStart $this', $this);
 
     }
 

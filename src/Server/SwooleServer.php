@@ -556,15 +556,15 @@ class SwooleServer extends LkkService {
                 case '' :default :
                     break;
                 case ServerConst::SERVER_TASK_TIMER : //定时任务
-                    if(is_array($taskData['message']['callback'])) {
-                        $object = new $taskData['message']['callback'][0];
-                        $method = $taskData['message']['callback'][1];
-                        //call_user_func([$object, $method], $taskData['message']['params']);
-                    }else{
-                        //call_user_func_array($taskData['message']['callback'], $taskData['message']['params']);
+                    $callback = $taskData['message']['callback'] ?? '';
+                    $params = $taskData['message']['params'] ?? [];
+
+                    if(is_array($callback) && !is_callable($callback[0])) {
+                        $obj = new $callback[0];
+                        $callback[0] = $obj;
                     }
 
-                    call_user_func_array($taskData['message']['callback'], $taskData['message']['params']);
+                    call_user_func_array($callback, $params);
 
                     break;
 
@@ -753,6 +753,15 @@ class SwooleServer extends LkkService {
      * @return $this
      */
     public function initServer() {
+        //设置定时器
+        $this->timerTaskManager = new TimerTaskManager(['timerTasks'=>$this->conf['timer_tasks']]);
+
+        //设置DI容器
+        $this->serverDi = new CliDi();
+
+        $this->setInerQueue();
+        $this->setRediQueue();
+
         $httpCnf = $this->conf['http_server'];
         $this->server = new \swoole_http_server($httpCnf['host'], $httpCnf['port']);
 
@@ -770,14 +779,6 @@ class SwooleServer extends LkkService {
      */
     public function startServer() {
         $this->bindEvents();
-        $this->setInerQueue();
-        $this->setRediQueue();
-
-        //设置定时器
-        $this->timerTaskManager = new TimerTaskManager(['timerTasks'=>$this->conf['timer_tasks']]);
-
-        //设置DI容器
-        $this->serverDi = new CliDi();
 
         echo("Service $this->servName start success\r\n");
         $this->server->start();
