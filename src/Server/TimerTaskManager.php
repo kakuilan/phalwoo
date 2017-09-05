@@ -194,7 +194,7 @@ class TimerTaskManager extends LkkService {
         //$this->deliveryTimerTask();
         if($this->timerId) swoole_timer_clear($this->timerId);
 
-        $this->timerId = swoole_timer_tick(500, function () {
+        $this->timerId = swoole_timer_tick(100, function () {
             $time = CommonHelper::getMillisecond();
             //echo "swoole_timer_tick [{$time}]\r\n";
             $this->deliveryTimerTask();

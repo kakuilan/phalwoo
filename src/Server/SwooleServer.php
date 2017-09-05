@@ -701,11 +701,13 @@ class SwooleServer extends LkkService {
             //启动定时器任务
             echo "timerTaskManager\r\n";
             //if($this->timerTaskManager->timerId) swoole_timer_clear($this->timerId);
-            $this->timerTaskManager->startTimerTasks();
+            //$this->timerTaskManager->startTimerTasks();
 
             /*$timerId = swoole_timer_tick(100, function () {
                 $time = CommonHelper::getMillisecond();
                 echo "swoole_timer_tick [{$time}]\r\n";
+
+                SwooleServer::getServer()->task([]);
             });*/
 
         }
@@ -877,7 +879,7 @@ class SwooleServer extends LkkService {
         $this->eventFire(__FUNCTION__);
         echo "on WorkerError...\r\n";
         echo "workerId[$workerId] workerPid[$workerPid] exitCode[$exitCode]\r\n";
-        die;
+        //die;
 
         return $this;
     }
