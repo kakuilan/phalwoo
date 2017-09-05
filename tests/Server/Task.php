@@ -18,7 +18,7 @@ class Task extends LkkService {
     public function dumpTest($title='none') {
         $time = date('Y-m-d H:i:s');
         $msg = "timer task callback: time[{$time}] title[{$title}]\r\n";
-        //print_r($msg);
+        print_r($msg);
     }
 
 

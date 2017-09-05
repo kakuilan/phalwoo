@@ -40,6 +40,7 @@ session前缀_PHCR _PHCOOKIE_
 `1 redis写入问题  
 
 TODO:  
+定时器待优化,会导致worker err  
 Cmponent 组件
 log eventsManager  
 redis长连接  
@@ -65,4 +66,6 @@ cron定时器基本格式 :
 第4列表示月份1～12
 第5列标识号星期0～6（0表示星期天）
 
-            
+------------------
+abnormal exit, status=0, signal=11  
+signal=11 表示产生了 core dump，你需要使用 gdb 跟踪  

@@ -31,8 +31,9 @@ return [
         'reactor_num' => 2,
         //worker进程数,为CPU的1-4倍
         'worker_num' => 4,
+        'max_request' => 1024,
         //服务最大允许的连接数
-        'max_conn' => 10240,
+        'max_conn' => 1024,
         //task进程的数量
         'task_worker_num' => 5,
         //task进程的最大任务数,0不限制

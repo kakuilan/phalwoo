@@ -188,9 +188,15 @@ class TimerTaskManager extends LkkService {
      * 开始定时任务
      */
     public function startTimerTasks() {
+        echo "startTimerTasks \r\n";
+
         //定时器/秒
-        $this->deliveryTimerTask();
-        $this->timerId = swoole_timer_tick(100, function () {
+        //$this->deliveryTimerTask();
+        if($this->timerId) swoole_timer_clear($this->timerId);
+
+        $this->timerId = swoole_timer_tick(500, function () {
+            $time = CommonHelper::getMillisecond();
+            //echo "swoole_timer_tick [{$time}]\r\n";
             $this->deliveryTimerTask();
         });
     }
@@ -216,6 +222,7 @@ class TimerTaskManager extends LkkService {
             $now = number_format(microtime(true), 1, '.','');
             $second = date('s');
             $milSecond = CommonHelper::getMillisecond();
+            echo "swoole_timer_tick [{$now}]\r\n";
             foreach ($this->timerTasks as $k=> &$taskData) {
                 //检查结束时间
                 if($taskData['run_endtime'] && $taskData['run_endtime'] < $now) {
@@ -262,7 +269,7 @@ class TimerTaskManager extends LkkService {
             }
         }
 
-        //echo "delivery timer tasks total:[$totalNum] sucess:[$succeNum]\r\n";
+        echo "delivery timer tasks total:[$totalNum] sucess:[$succeNum]\r\n";
 
         return $succeNum;
     }

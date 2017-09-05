@@ -2,8 +2,8 @@
 /**
  * Copyright (c) 2017 LKK/lianq.net All rights reserved
  * User: kakuilan@163.com
- * Date: 2017/8/12
- * Time: 21:01
+ * Date: 17-9-4
+ * Time: 下午6:18
  * Desc: -SWOOLE服务器
  */
 
@@ -18,22 +18,19 @@ use Phalcon\Events\Manager as PhEventManager;
 
 class SwooleServer extends LkkService {
 
+    protected $conf; //服务配置
+    protected $events; //swoole_server事件
+    protected $server; //swoole_server对象
+    protected $serverDi; //服务器的DI容器
 
-    public $conf; //服务配置
-    private $server; //swoole_server对象
-    private $events; //swoole_server事件
-    private $serverDi; //服务器的DI容器
+    protected $inerqueue; //内部队列,非持久化工作
+    protected $rediqueue; //redis持久化队列
 
-    private $inerqueue; //内部队列,非持久化工作
-    private $rediqueue; //redis持久化队列
+    protected $servName; //服务名
+    protected $listenIP; //监听IP
+    protected $listenPort; //监听端口
 
-    private $servName; //服务名
-    private $listenIP; //监听IP
-    private $listenPort; //监听端口
-
-
-    //定时任务管理器
-    private $timerTaskManager;
+    protected $timerTaskManager; //定时任务管理器
 
     //命令行操作列表
     public static $cliOperations = [
@@ -44,10 +41,69 @@ class SwooleServer extends LkkService {
         'reload',
         'kill',
     ];
+
+
     protected static $cliOperate; //当前命令操作
     protected static $daemonize; //是否以守护进程启动
     protected static $pidFile;   //pid文件路径
     protected static $startTime; //服务启动时间,毫秒
+
+
+    /**
+     * 获取实例[重写]
+     * @param array $vars
+     * @return mixed
+     */
+    public static function instance(array $vars = []) {
+        if(is_null(self::$instance) || !is_object(self::$instance)) {
+            self::$instance = new self($vars);
+        }
+
+        return self::$instance;
+    }
+
+
+    /**
+     * 设置实例的属性
+     * @param $name
+     * @param $val
+     * @return bool
+     */
+    public static function setProperty($name, $val) {
+        $res = false;
+        if(is_object(self::$instance)) {
+            try {
+                self::$instance->$name = $val;
+                $res = true;
+            }catch (\Exception $e) {
+                $res = false;
+            }
+        }
+
+        return $res;
+    }
+
+
+    /**
+     * 获取实例的属性
+     * @param $name
+     * @return null
+     */
+    public static function getProperty($name) {
+        $res = null;
+        if(is_object(self::$instance)) {
+            if(isset(self::$instance->$name) || array_key_exists($name, get_class_vars(get_class(self::$instance)))) {
+                try {
+                    $res = self::$instance->$name;
+                }catch (\Exception $e) {
+                    $res = null;
+                }
+            }
+        }
+
+        return $res;
+    }
+
 
     /**
      * 构造函数
@@ -96,27 +152,11 @@ class SwooleServer extends LkkService {
     }
 
 
-    /**
-     * 获取属性
-     * @param $name
-     *
-     * @return null
-     */
-    public static function getProperty($name) {
-        if(is_object(self::$instance)) {
-            if(isset(self::$instance->$name) || array_key_exists($name, get_class_vars(get_class(self::$instance)))) {
-                return self::$instance->$name;
-            }
-        }
-
-        return null;
-    }
-
 
     /**
      * 设置内置队列对象
      */
-    private function setInerQueue() {
+    protected function setInerQueue() {
         $this->inerqueue = new \Swoole\Channel(256 * 1024 * 1024);
     }
 
@@ -133,7 +173,7 @@ class SwooleServer extends LkkService {
     /**
      * 设置redis队列对象
      */
-    private function setRediQueue() {
+    protected function setRediQueue() {
         //默认使用工作流队列,子类可自行更改
         $this->rediqueue = RedisQueue::getQueueObject(RedisQueue::APP_WORKFLOW_QUEUE_NAME, []);
     }
@@ -167,7 +207,7 @@ class SwooleServer extends LkkService {
             exit("only run in command line mode \r\n");
         }
 
-        //销毁旧对象
+        //销毁旧实例
         self::destroy();
 
         global $argv;
@@ -338,292 +378,6 @@ class SwooleServer extends LkkService {
     }
 
 
-    /**
-     * 绑定事件
-     */
-    public function bindEvents() {
-        $this->server->on('Start', [$this, 'onStart']);
-        $this->server->on('Shutdown', [$this, 'onShutdown']);
-        $this->server->on('WorkerStart', [$this, 'onWorkerStart']);
-        $this->server->on('WorkerStop', [$this, 'onWorkerStop']);
-        $this->server->on('Connect', [$this, 'onConnect']);
-        $this->server->on('Request', [$this, 'onRequest']);
-        $this->server->on('Close', [$this, 'onClose']);
-        $this->server->on('Task', [$this, 'onTask']);
-        $this->server->on('Finish', [$this, 'onFinish']);
-        $this->server->on('PipeMessage', [$this, 'onPipeMessage']);
-        $this->server->on('WorkerError', [$this, 'onWorkerError']);
-        $this->server->on('ManagerStart', [$this, 'onManagerStart']);
-        $this->server->on('ManagerStop', [$this, 'onManagerStop']);
-
-        return $this;
-    }
-
-
-    /**
-     * 当服务器启动时[事件]
-     * @param object $serv swoole_server对象
-     *
-     * @return $this
-     */
-    public function onStart($serv) {
-        self::setProcessTitle($this->servName.'-Master');
-        self::setMasterPid($serv->master_pid, $serv->manager_pid);
-
-        $this->eventFire(__FUNCTION__);
-        echo "Master Start...\r\n";
-
-        return $this;
-    }
-
-
-    /**
-     * 当服务器关闭时[事件]
-     * @param object $serv swoole_server对象
-     *
-     * @return $this
-     */
-    public function onShutdown($serv) {
-        $this->eventFire(__FUNCTION__);
-        echo "Master Shutdown...\r\n";
-
-        return $this;
-    }
-
-
-    /**
-     * 当管理进程启动时[事件]
-     * @param object $serv swoole_server对象
-     */
-    public function onManagerStart($serv) {
-        self::setProcessTitle($this->servName.'-Manager');
-
-        $this->eventFire(__FUNCTION__);
-        echo "Manager Start...\r\n";
-
-        return $this;
-    }
-
-
-    /**
-     * 当管理进程停止时[事件]
-     * @param object $serv swoole_server对象
-     *
-     * @return $this
-     */
-    public function onManagerStop($serv) {
-        $this->eventFire(__FUNCTION__);
-        echo "Manager Stop...\r\n";
-
-        return $this;
-    }
-
-
-    /**
-     * 当worker进程启动[事件]
-     * @param object $serv swoole_server对象
-     * @param int $workerId 从0-$worker_num之间的数字
-     *
-     * @return $this
-     */
-    public function onWorkerStart($serv, $workerId) {
-        self::setProcessTitle($this->servName.'-Worker');
-        self::setWorketPid($serv->worker_pid);
-
-        //最后一个worker处理启动定时器
-        if ($workerId == $this->conf['server_conf']['worker_num'] - 1) {
-            //启动定时器任务
-            $this->timerTaskManager->startTimerTasks();
-        }
-
-        $this->eventFire(__FUNCTION__);
-        echo "Worker Start:[{$workerId}]...\r\n";
-
-        return $this;
-    }
-
-
-    /**
-     * 当worker进程停止[事件]
-     * @param object $serv swoole_server对象
-     * @param int $workerId 从0-$worker_num之间的数字
-     *
-     * @return $this
-     */
-    public function onWorkerStop($serv, $workerId) {
-        $this->eventFire(__FUNCTION__);
-        echo "Worker Stop:[{$workerId}]...\r\n";
-
-        return $this;
-    }
-
-
-    /**
-     * 当有新的连接进入时[事件]
-     * @param object $serv swoole_server对象
-     * @param mixed $fd 连接的文件描述符,发送数据/关闭连接时需要此参数
-     * @param int $fromId 来自那个Reactor线程
-     *
-     * @return $this
-     */
-    public function onConnect($serv, $fd, $fromId) {
-        $this->eventFire(__FUNCTION__);
-        echo "new Connect:[{$fromId}]...\r\n";
-
-        return $this;
-    }
-
-
-    /**
-     * 当有http请求时[事件]
-     * @param object $request 请求对象
-     * @param object $response 响应对象
-     *
-     * @return $this
-     */
-    public function onRequest($request, $response) {
-        $this->eventFire(__FUNCTION__);
-        echo "on Request...\r\n";
-
-        //TODO 注册捕获错误函数
-        //register_shutdown_function();
-
-        //不解析静态资源
-        if ($request->server['request_uri'] == '/favicon.ico' || $request->server['path_info'] == '/favicon.ico') {
-            return $response->end();
-        }elseif (preg_match('/(.css|.js|.gif|.png|.jpg|.jpeg|.ttf|.woff|.ico)$/i', $request->server['request_uri']) === 1) {
-            return $response->end();
-        }
-
-        $_REQUEST = $_SESSION = $_COOKIE = $_FILES = $_POST = $_SERVER = $_GET = [];
-        //处理请求
-        //TODO 留给子类具体去处理
-
-
-        return $this;
-    }
-
-
-    /**
-     * 当http响应之后[供子类调用]
-     * @param $request
-     * @param $response
-     */
-    public function afterResponse($request, $response) {
-        unset($request);
-        unset($response);
-    }
-
-
-    /**
-     * 当客户端连接关闭时[事件]
-     * @param object $serv swoole_server对象
-     * @param mixed $fd 连接的文件描述符,发送数据/关闭连接时需要此参数
-     * @param int $fromId 来自那个Reactor线程
-     *
-     * @return $this
-     */
-    public function onClose($serv, $fd, $fromId) {
-        $this->eventFire(__FUNCTION__);
-        echo "on Close:[{$fromId}]...\r\n";
-
-        //写日志
-        $di = SwooleServer::getServerDi();
-        $eventManager = $di->get('eventsManager');
-        $eventManager->fire('swooleserver:onClose', $this);
-
-        return $this;
-    }
-
-
-    /**
-     * 当任务被调用时[事件]
-     * @param object $serv swoole_server对象
-     * @param int $taskId 任务ID
-     * @param int $fromId 来自那个Reactor线程
-     * @param array $taskData 任务数据
-     *
-     * @return $this
-     */
-    public function onTask($serv, $taskId, $fromId, $taskData) {
-        self::setProcessTitle($this->servName.'-Tasker');
-        $this->eventFire(__FUNCTION__);
-        //echo "on Task...\r\n";
-
-        //检查任务类型
-        if(is_array($taskData) && isset($taskData['type'])) {
-            switch ($taskData['type']) {
-                case '' :default :
-                    break;
-                case ServerConst::SERVER_TASK_TIMER : //定时任务
-                    $callback = $taskData['message']['callback'] ?? '';
-                    $params = $taskData['message']['params'] ?? [];
-
-                    if(is_array($callback) && !is_callable($callback[0])) {
-                        $obj = new $callback[0];
-                        $callback[0] = $obj;
-                    }
-
-                    call_user_func_array($callback, $params);
-
-                    break;
-
-            }
-        }
-
-        return $this;
-    }
-
-
-    /**
-     * 当任务完成时[事件]
-     * @param object $serv swoole_server对象
-     * @param int $taskId 任务ID
-     * @param array $taskData 任务数据
-     *
-     * @return $this
-     */
-    public function onFinish($serv, $taskId, $taskData) {
-        $this->eventFire(__FUNCTION__);
-        //echo "on Finish...\r\n";
-
-        return $this;
-    }
-
-
-    /**
-     * 当收到管道消息时[事件]
-     * @param $serv
-     * @param $fromWorkerId
-     * @param $message
-     *
-     * @return $this
-     */
-    public function onPipeMessage($serv, $fromWorkerId, $message) {
-        $this->eventFire(__FUNCTION__);
-        echo "on PipeMessage...\r\n";
-
-        return $this;
-    }
-
-
-    /**
-     * 当worker进程发生异常时[事件]
-     * @param $serv
-     * @param $workerId
-     * @param $workerPid
-     * @param $exitCode
-     *
-     * @return $this
-     */
-    public function onWorkerError($serv, $workerId, $workerPid, $exitCode) {
-        $this->eventFire(__FUNCTION__);
-        echo "on WorkerError...\r\n";
-
-        return $this;
-    }
-
-
 
     /**
      * 执行
@@ -753,11 +507,11 @@ class SwooleServer extends LkkService {
      * @return $this
      */
     public function initServer() {
-        //设置定时器
-        $this->timerTaskManager = new TimerTaskManager(['timerTasks'=>$this->conf['timer_tasks']]);
-
         //设置DI容器
         $this->serverDi = new CliDi();
+
+        //设置定时器
+        $this->timerTaskManager = new TimerTaskManager(['timerTasks'=>$this->conf['timer_tasks']]);
 
         $this->setInerQueue();
         $this->setRediQueue();
@@ -847,6 +601,289 @@ class SwooleServer extends LkkService {
 
         return $currentIP;
     }
+
+
+    /**
+     * 绑定事件
+     */
+    public function bindEvents() {
+        $this->server->on('Start',          [$this, 'onSwooleStart']);
+        $this->server->on('Shutdown',       [$this, 'onSwooleShutdown']);
+        $this->server->on('WorkerStart',    [$this, 'onSwooleWorkerStart']);
+        $this->server->on('WorkerStop',     [$this, 'onSwooleWorkerStop']);
+        $this->server->on('Connect',        [$this, 'onSwooleConnect']);
+        $this->server->on('Request',        [$this, 'onSwooleRequest']);
+        $this->server->on('Close',          [$this, 'onSwooleClose']);
+        $this->server->on('Task',           [$this, 'onSwooleTask']);
+        $this->server->on('Finish',         [$this, 'onSwooleFinish']);
+        $this->server->on('PipeMessage',    [$this, 'onSwoolePipeMessage']);
+        $this->server->on('WorkerError',    [$this, 'onSwooleWorkerError']);
+        $this->server->on('ManagerStart',   [$this, 'onSwooleManagerStart']);
+        $this->server->on('ManagerStop',    [$this, 'onSwooleManagerStop']);
+
+        return $this;
+    }
+
+
+    /**
+     * 当服务器启动时[事件]
+     * @param object $serv swoole_server对象
+     *
+     * @return $this
+     */
+    public function onSwooleStart($serv) {
+        self::setProcessTitle($this->servName.'-Master');
+        self::setMasterPid($serv->master_pid, $serv->manager_pid);
+
+        $this->eventFire(__FUNCTION__);
+        echo "Master Start...\r\n";
+
+        return $this;
+    }
+
+
+    /**
+     * 当服务器关闭时[事件]
+     * @param object $serv swoole_server对象
+     *
+     * @return $this
+     */
+    public function onSwooleShutdown($serv) {
+        $this->eventFire(__FUNCTION__);
+        echo "Master Shutdown...\r\n";
+
+        return $this;
+    }
+
+
+    /**
+     * 当管理进程启动时[事件]
+     * @param object $serv swoole_server对象
+     */
+    public function onSwooleManagerStart($serv) {
+        self::setProcessTitle($this->servName.'-Manager');
+
+        $this->eventFire(__FUNCTION__);
+        echo "Manager Start...\r\n";
+
+        return $this;
+    }
+
+
+
+    /**
+     * 当管理进程停止时[事件]
+     * @param object $serv swoole_server对象
+     *
+     * @return $this
+     */
+    public function onSwooleManagerStop($serv) {
+        $this->eventFire(__FUNCTION__);
+        echo "Manager Stop...\r\n";
+
+        return $this;
+    }
+
+
+    /**
+     * 当worker进程启动[事件]
+     * @param object $serv swoole_server对象
+     * @param int $workerId 从0-$worker_num之间的数字
+     *
+     * @return $this
+     */
+    public function onSwooleWorkerStart($serv, $workerId) {
+        self::setProcessTitle($this->servName.'-Worker');
+        self::setWorketPid($serv->worker_pid);
+
+        //最后一个worker处理启动定时器
+        if ($workerId == $this->conf['server_conf']['worker_num'] - 1) {
+            //启动定时器任务
+            echo "timerTaskManager\r\n";
+            //if($this->timerTaskManager->timerId) swoole_timer_clear($this->timerId);
+            $this->timerTaskManager->startTimerTasks();
+
+            /*$timerId = swoole_timer_tick(100, function () {
+                $time = CommonHelper::getMillisecond();
+                echo "swoole_timer_tick [{$time}]\r\n";
+            });*/
+
+        }
+
+        $this->eventFire(__FUNCTION__);
+        echo "Worker Start:[{$workerId}]...\r\n";
+
+        return $this;
+    }
+
+
+    /**
+     * 当worker进程停止[事件]
+     * @param object $serv swoole_server对象
+     * @param int $workerId 从0-$worker_num之间的数字
+     *
+     * @return $this
+     */
+    public function onSwooleWorkerStop($serv, $workerId) {
+        $this->eventFire(__FUNCTION__);
+        echo "Worker Stop:[{$workerId}]...\r\n";
+
+        return $this;
+    }
+
+
+
+    /**
+     * 当有新的连接进入时[事件]
+     * @param object $serv swoole_server对象
+     * @param mixed $fd 连接的文件描述符,发送数据/关闭连接时需要此参数
+     * @param int $fromId 来自那个Reactor线程
+     *
+     * @return $this
+     */
+    public function onSwooleConnect($serv, $fd, $fromId) {
+        $this->eventFire(__FUNCTION__);
+        echo "new Connect:[{$fromId}]...\r\n";
+
+        return $this;
+    }
+
+
+
+    /**
+     * 当有http请求时[事件]
+     * @param object $request 请求对象
+     * @param object $response 响应对象
+     *
+     * @return $this
+     */
+    public function onSwooleRequest($request, $response) {
+        $this->eventFire(__FUNCTION__);
+        echo "on Request...\r\n";
+
+        //不解析静态资源
+        if ($request->server['request_uri'] == '/favicon.ico' || $request->server['path_info'] == '/favicon.ico') {
+            return $response->end();
+        }elseif (preg_match('/(.css|.js|.gif|.png|.jpg|.jpeg|.ttf|.woff|.ico)$/i', $request->server['request_uri']) === 1) {
+            return $response->end();
+        }
+
+        $_REQUEST = $_SESSION = $_COOKIE = $_FILES = $_POST = $_SERVER = $_GET = [];
+        //具体处理请求,留给子类去处理
+
+        return $this;
+    }
+
+
+    /**
+     * 当客户端连接关闭时[事件]
+     * @param object $serv swoole_server对象
+     * @param mixed $fd 连接的文件描述符,发送数据/关闭连接时需要此参数
+     * @param int $fromId 来自那个Reactor线程
+     *
+     * @return $this
+     */
+    public function onSwooleClose($serv, $fd, $fromId) {
+        $this->eventFire(__FUNCTION__);
+        echo "on Close:[{$fromId}]...\r\n";
+
+        return $this;
+    }
+
+
+    /**
+     * 当任务被调用时[事件]
+     * @param object $serv swoole_server对象
+     * @param int $taskId 任务ID
+     * @param int $fromId 来自那个Reactor线程
+     * @param array $taskData 任务数据
+     *
+     * @return $this
+     */
+    public function onSwooleTask($serv, $taskId, $fromId, $taskData) {
+        self::setProcessTitle($this->servName.'-Tasker');
+        $this->eventFire(__FUNCTION__);
+        //echo "on Task...\r\n";
+
+        //检查任务类型
+        if(is_array($taskData) && isset($taskData['type'])) {
+            switch ($taskData['type']) {
+                case ServerConst::SERVER_TASK_TIMER : //定时任务
+                    $callback = $taskData['message']['callback'] ?? '';
+                    $params = $taskData['message']['params'] ?? [];
+                    if(is_array($callback) && !is_callable($callback[0])) {
+                        $obj = new $callback[0];
+                        $callback[0] = $obj;
+                    }
+
+                    echo "1111\r\n";
+
+                    //call_user_func_array($callback, $params);
+                    break;
+                case '' :default :
+                    break;
+            }
+        }
+
+        unset($taskData);
+
+        return $this;
+    }
+
+
+    /**
+     * 当任务完成时[事件]
+     * @param object $serv swoole_server对象
+     * @param int $taskId 任务ID
+     * @param array $taskData 任务数据
+     *
+     * @return $this
+     */
+    public function onSwooleFinish($serv, $taskId, $taskData) {
+        $this->eventFire(__FUNCTION__);
+        //echo "on Finish...\r\n";
+
+        return $this;
+    }
+
+
+    /**
+     * 当收到管道消息时[事件]
+     * @param $serv
+     * @param $fromWorkerId
+     * @param $message
+     *
+     * @return $this
+     */
+    public function onSwoolePipeMessage($serv, $fromWorkerId, $message) {
+        $this->eventFire(__FUNCTION__);
+        echo "on PipeMessage...\r\n";
+
+        return $this;
+    }
+
+
+
+    /**
+     * 当worker进程发生异常时[事件]
+     * @param $serv
+     * @param $workerId
+     * @param $workerPid
+     * @param $exitCode
+     *
+     * @return $this
+     */
+    public function onSwooleWorkerError($serv, $workerId, $workerPid, $exitCode) {
+        $this->eventFire(__FUNCTION__);
+        echo "on WorkerError...\r\n";
+        echo "workerId[$workerId] workerPid[$workerPid] exitCode[$exitCode]\r\n";
+        die;
+
+        return $this;
+    }
+
+
+
 
 
 }
