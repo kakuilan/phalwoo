@@ -20,7 +20,8 @@ use Lkk\Phalwoo\Server\SwooleServer;
 
 class Redis extends Adapter {
 
-    const CACHE_PREFIX = '_PHCR';
+    const CACHE_PREFIX  = '_PHCR';
+    const STATI_KEY     = '_PSVT'; //保存[统计session访问次数]的键
 
     protected $_redis = null;
     private $_domain = '';
@@ -111,6 +112,8 @@ class Redis extends Adapter {
      */
     public function open() {
         $option = $this->getOptions();
+        //TODO 使用连接池
+        //Warning: Redis::connect(): connect() failed: Cannot assign requested address
         $res = $this->_redis->connect($option['host'], $option['port'], 2.5);
         if(!$res) return false;
         if(isset($option['auth']) && !empty($option['auth'])) {
@@ -155,6 +158,7 @@ class Redis extends Adapter {
             return false;
         }
 
+        $isNew = false;
         if (empty($this->_id)) {
             $cookies = $this->_dependencyInjector->getShared('cookies');
             if ($cookies->has($this->_name)) {
@@ -162,20 +166,29 @@ class Redis extends Adapter {
 
                 $cookie = $cookies->get($this->_name, true);
                 $this->_id = $cookie->getValue();
-
-                $data = $this->read($this->_id);
-                if($data) {
-                    $this->_sessionData = $data;
-                    $ttl = $this->_redis->ttl($this->getIdKey($this->_id));
-                    if($ttl!= -2) $this->_lefttime = $ttl;
-                }else{
-                    $this->setSessionIdCookie();
-                }
             } else {
+                $isNew = true;
                 $this->regenerateId();
+                $this->setSessionIdCookie();
+                $this->_sessionData[self::STATI_KEY] = 1;
+            }
+        }
+
+        if(!$isNew) {
+            $data = $this->read($this->_id);
+            if($data) {
+                $this->_sessionData = $data;
+
+                $ttl = $this->_redis->ttl($this->getIdKey($this->_id));
+                if($ttl!= -2) $this->_lefttime = $ttl;
+            }else{
                 $this->setSessionIdCookie();
             }
         }
+
+        //访问次数统计
+        if(!isset($this->_sessionData[self::STATI_KEY])) $this->_sessionData[self::STATI_KEY] = 0;
+        $this->set(self::STATI_KEY, ++$this->_sessionData[self::STATI_KEY]);
 
         /** @var Manager $eventManager */
         $eventManager = $this->_dependencyInjector->getShared('eventsManager');
@@ -219,9 +232,9 @@ class Redis extends Adapter {
         }elseif($this->_lefttime ==0) { //第一次,初始为60s,防止非浏览器压测
             $res = $this->_redis->setex($this->getIdKey($sessionId), 60, $data);
         }elseif($this->_lefttime >0 && $this->_lefttime <=120) { //第二次更新为正常
-            $res = $this->_redis->setex($this->getIdKey($sessionId), $this->_lifetime, $data);
+            $res = $this->_redis->setex($this->getIdKey($sessionId), Adapter::SESSION_LIFETIME, $data);
         }else{
-            $res = $this->_redis->set($this->getIdKey($sessionId), $data);
+            $res = $this->_redis->setex($this->getIdKey($sessionId), $this->_lifetime, $data);
         }
 
         return $res;
@@ -247,12 +260,21 @@ class Redis extends Adapter {
             return false;
         }
 
+        //lefttime计算
+        if($this->_sessionData[self::STATI_KEY] <=10) { //第1次,先给5分钟;
+            $lefttime = 300;
+        }elseif ($this->_sessionData[self::STATI_KEY] <= 20) { //5分钟内超过10次的,给10分钟
+            $lefttime = 300;
+        }
+
+
+
         $workData = [
             'type' => 'session',
             'data' => [
                 'key' => $this->getIdKey($this->_id),
                 'session' => $this->_sessionData,
-                'lefttime' => ($this->_lefttime>0 ? $this->_lefttime : $this->_lifetime),
+                'lefttime' => ($this->_lefttime>0 ? $this->_lefttime : Adapter::SESSION_LIFETIME),
             ]
         ];
         $inerQueue = SwooleServer::getInerQueue();

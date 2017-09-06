@@ -65,9 +65,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
         $this->maxRecords = SwooleLogger::$maxRecords;
 
         $this->createDir();
-        $this->bindServerStopEvent();
-
-
+        //$this->bindSwooleCloseEvent();
     }
 
 
@@ -170,6 +168,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
     }
 
 
+
     protected function streamWrite($all=false) {
         //允许一个随机率可写,否则可能内存不足
         $writeable = !$all || !$this->isWriting || mt_rand(0, 3)==1;
@@ -186,7 +185,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
         $logger->setIsWriting(true);
         swoole_async_writefile($this->url, $str, function($filename) use($logger) {
             $logger->setIsWriting(false);
-            echo "write done.\r\n";
+            echo "logger write done.\r\n";
 
             //TODO 这里日志切割有问题,放到定时器里面切割?
             if(file_exists($filename) && filesize($filename) >= $logger->maxFileSize){
@@ -245,16 +244,26 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
     }
 
 
-    public function bindServerStopEvent() {
+    /**
+     * 绑定[客户端连接关闭]事件
+     * @return $this
+     */
+    public function bindSwooleCloseEvent() {
         $di = SwooleServer::getServerDi();
         $logger = $this;
         $eventManager = $di->get('eventsManager');
-        $eventManager->attach('swooleserver:onClose', function () use($logger) {
-            echo "event callback\r\n";
+        $eventManager->attach('SwooleServer:onSwooleClose', function () use($logger) {
+            echo "logger event callback\r\n";
             $logger->flush();
+            return true;
         });
 
+        return $this;
     }
+
+
+
+
 }
 
 

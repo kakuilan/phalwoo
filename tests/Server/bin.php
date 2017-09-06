@@ -16,9 +16,9 @@ $loader->addPsr4('Tests\\', dirname(__DIR__));
 
 $conf = require_once 'config.php';
 
+
 Tests\Server\MyServer::parseCommands();
 Tests\Server\MyServer::instance()->setConf($conf)->run();
-
 
 /*$boot = new \Tests\Server\TestServer();
 $boot->setConf($conf)->initServer()->startServer();*/

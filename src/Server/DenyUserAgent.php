@@ -125,6 +125,7 @@ class DenyUserAgent extends LkkService implements InjectionAwareInterface {
      * @return bool
      */
     public function checkCookie() {
+        var_dump('checkCookie');
         if(!empty($this->request->cookie) && !isset($this->request->cookie[SessionAdapter::SESSION_NAME])) {
             $this->setError('cookies没有sessionId');
             return false;
@@ -133,7 +134,7 @@ class DenyUserAgent extends LkkService implements InjectionAwareInterface {
             $crypt = $this->_dependencyInjector->getShared('crypt');
             $decryptedValue = $crypt->decryptBase64($value);
             $uuid = $this->getAgentUuid();
-            if(strpos($decryptedValue, $uuid)!==0) {
+            if(substr($decryptedValue, 22) !==$uuid) {
                 $this->setError('cookies的sessionId错误');
                 return false;
             }
@@ -178,8 +179,11 @@ class DenyUserAgent extends LkkService implements InjectionAwareInterface {
             $ip = $this->request->header['x_forwarded_for'] ??
                 ($this->request->header['client_ip'] ?? ($this->request->header['remote_addr'] ?? '127.0.0.1'));
             $rand = md5(uniqid($ip.microtime(true), true));
+            $rand = substr($rand,8,16);
+            $time = substr(time(), -6);
 
-            $this->sessionId = "{$uuid}-{$rand}";
+            //前6位是时间,中间16位随机,后面数字是uuid
+            $this->sessionId = "{$time}{$rand}{$uuid}";
         }
 
         return $this->sessionId;

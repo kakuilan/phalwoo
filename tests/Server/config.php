@@ -22,6 +22,12 @@ return [
         'port' => 6666, //6666
     ],
 
+    //本系统日志
+    'sys_log' => [
+        'name' => 'kslog', //日志名
+        'file' => '/tmp/kslog.log', //日志文件路径
+        'enable' => true, //是否开启
+    ],
 
     //服务配置
     'server_conf' => [
@@ -31,6 +37,7 @@ return [
         'reactor_num' => 2,
         //worker进程数,为CPU的1-4倍
         'worker_num' => 4,
+        //worker进程的最大任务数
         'max_request' => 1024,
         //服务最大允许的连接数
         'max_conn' => 1024,

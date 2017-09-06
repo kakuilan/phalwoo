@@ -25,6 +25,8 @@ abstract class Adapter implements AdapterInterface, InjectionAwareInterface {
 
     const SESSION_NAME = 'PHPSESSID';
 
+    const SESSION_LIFETIME = 1800; //秒
+
 
     /**
      * SESSION_ID
@@ -94,7 +96,7 @@ abstract class Adapter implements AdapterInterface, InjectionAwareInterface {
      * Session lifetime
      * @var int
      */
-    protected $_lifetime = 8600;
+    protected $_lifetime = self::SESSION_LIFETIME;
 
 
     /**

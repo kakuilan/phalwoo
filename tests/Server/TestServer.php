@@ -78,7 +78,9 @@ class TestServer {
      * 绑定事件
      */
     public function bindEvents() {
-        $this->server->on('Start', [$this, 'onStart']);
+        $class = static::class;
+
+        $this->server->on('Start', "{$class}::onStart");
         $this->server->on('Shutdown', [$this, 'onShutdown']);
         $this->server->on('WorkerStart', [$this, 'onWorkerStart']);
         $this->server->on('WorkerStop', [$this, 'onWorkerStop']);
@@ -102,13 +104,19 @@ class TestServer {
      *
      * @return $this
      */
-    public function onStart($serv) {
+    public function onStart00($serv) {
         echo "Master Start...\r\n";
 
         $this->_onStart = 1;
 
         return $this;
     }
+
+
+    public static function onStart($serv) {
+        echo "Master Start...\r\n";
+    }
+
 
 
     /**
@@ -166,7 +174,15 @@ class TestServer {
         echo "Worker Start:[{$workerId}]...\r\n";
 
         $this->_onWorkerStart = 4;
-        var_dump($this);
+        //var_dump($this);
+
+        if ($workerId == 1) {
+            //启动定时器任务
+            $timerId = swoole_timer_tick(100, function () use($serv) {
+                echo "timer tick \r\n";
+                $serv->task([]);
+            });
+        }
 
         return $this;
     }
@@ -304,6 +320,8 @@ class TestServer {
      */
     public function onWorkerError($serv, $workerId, $workerPid, $exitCode) {
         echo "on WorkerError...\r\n";
+        echo "workerId[$workerId] workerPid[$workerPid] exitCode[$exitCode]\r\n";
+        die;
 
         return $this;
     }

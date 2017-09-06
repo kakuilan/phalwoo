@@ -43,9 +43,10 @@ TODO:
 定时器待优化,会导致worker err  
 Cmponent 组件
 log eventsManager  
+日志切割  
 redis长连接  
 db长连接   
-获取内存地址  
+大量连接时session redis超时错误  
 
 
 连接池参考Promise   
@@ -54,6 +55,7 @@ https://github.com/guzzle/promises
 cat-sys/cat-core  
 Hprose\Promise  
 Prophecy  
+将cookie里面写_PHCOOKIE_拆出来  
 
 
 -----------------------

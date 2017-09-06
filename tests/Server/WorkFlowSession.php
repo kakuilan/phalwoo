@@ -12,6 +12,7 @@ namespace Tests\Server;
 
 use Lkk\Phalwoo\Server\WorkFlow;
 use Lkk\Phalwoo\Server\SwooleServer;
+use Lkk\Phalwoo\Phalcon\Session\Adapter;
 
 class WorkFlowSession extends WorkFlow {
 
@@ -50,10 +51,10 @@ class WorkFlowSession extends WorkFlow {
                     $res = $redis->setex($item['key'], 60, $item['session']);
                     $succ++;
                 }*/elseif($item['lefttime'] <=120) { //第二次更新为正常
-                    $res = $redis->setex($item['key'], $item['lefttime'], $item['session']);
+                    $res = $redis->setex($item['key'], Adapter::SESSION_LIFETIME, $item['session']);
                     $succ++;
                 }else{
-                    $res = $redis->set($item['key'], $item['session']);
+                    $res = $redis->setex($item['key'], $item['lefttime'], $item['session']);
                     $succ++;
                 }
             }else{

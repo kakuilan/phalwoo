@@ -11,6 +11,7 @@
 namespace Lkk\Phalwoo\Server\Component\Log;
 
 use Monolog\Handler\HandlerInterface;
+use Monolog\Formatter\LineFormatter;
 use Monolog\Logger as Monologger;
 use Lkk\Phalwoo\Server\Component\Log\Handler\AsyncStreamHandler;
 use Phalcon\Events\Manager as PhEventManager;
@@ -34,6 +35,7 @@ class SwooleLogger extends Monologger {
     public function __construct($name, $handlers, $processors = []) {
         parent::__construct($name, $handlers, $processors);
 
+        $this->useMicrosecondTimestamps(true);
     }
 
 
@@ -44,10 +46,21 @@ class SwooleLogger extends Monologger {
             throw new \LogicException('You tried to log a empty logfile.');
         }
 
+
+        //设置日期格式
+        $dateFormat = "Y-m-d H:i:s.u";
+        $formatter = new LineFormatter(null, $dateFormat);
+
         $this->defaultHandler = new AsyncStreamHandler($this->logFile, Monologger::INFO);
+        $this->defaultHandler->setFormatter($formatter);
+
         parent::pushHandler($this->defaultHandler);
     }
 
+
+    public function getDefaultHandler() {
+        return $this->defaultHandler;
+    }
 
 
     public function pushHandler(HandlerInterface $handler) {
