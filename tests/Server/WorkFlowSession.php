@@ -46,7 +46,7 @@ class WorkFlowSession extends WorkFlow {
             }elseif ($item['type']=='session') {
                 $item = $item['data'];
                 if(empty($item['session'])) {
-                    $res = $redis->del($item['']['key']);
+                    $res = $redis->del($item['key']);
                 }else{
                     $res = $redis->setex($item['key'], $item['lefttime'], $item['session']);
                     $succ++;
