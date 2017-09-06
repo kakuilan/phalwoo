@@ -117,7 +117,7 @@ return [
                 'callback' => ['\Tests\Server\Task','sessionTest'],
                 'params' => [],
             ],
-            'run_interval_time' => 0.2,
+            'run_interval_time' => 0.4,
         ],
     ],
 

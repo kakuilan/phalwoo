@@ -47,12 +47,6 @@ class WorkFlowSession extends WorkFlow {
                 $item = $item['data'];
                 if(empty($item['session'])) {
                     $res = $redis->del($item['']['key']);
-                }/*elseif($item['lefttime'] ==0) { //第一次,初始为60s,防止非浏览器压测
-                    $res = $redis->setex($item['key'], 60, $item['session']);
-                    $succ++;
-                }*/elseif($item['lefttime'] <=120) { //第二次更新为正常
-                    $res = $redis->setex($item['key'], Adapter::SESSION_LIFETIME, $item['session']);
-                    $succ++;
                 }else{
                     $res = $redis->setex($item['key'], $item['lefttime'], $item['session']);
                     $succ++;

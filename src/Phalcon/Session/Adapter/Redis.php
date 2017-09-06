@@ -249,32 +249,22 @@ class Redis extends Adapter {
         $this->close();*/
 
         $this->close();
-        /*$a = $this->getWritable();
-        $b = !empty($this->_sessionData);
-        $c = $this->isUpdate();
-        $d = $this->_lefttime<=120;*/
 
         $writable = ($this->getWritable() && !empty($this->_sessionData) && ($this->isUpdate() || $this->_lefttime<=120) );
-        //var_dump('$writable', $writable, $a, $b, $c, $d);
         if(!$writable) {
             return false;
         }
 
-        //lefttime计算
-        if($this->_sessionData[self::STATI_KEY] <=10) { //第1次,先给5分钟;
-            $lefttime = 300;
-        }elseif ($this->_sessionData[self::STATI_KEY] <= 20) { //5分钟内超过10次的,给10分钟
-            $lefttime = 300;
-        }
-
-
+        //lefttime计算:第1次,先给5分钟;5分钟内超过10次的,给10分钟;以此类推
+        $lefttime = (intval($this->_sessionData[self::STATI_KEY] /10) + 1) * 300;
+        if($lefttime> Adapter::SESSION_LIFETIME) $lefttime = Adapter::SESSION_LIFETIME;
 
         $workData = [
             'type' => 'session',
             'data' => [
                 'key' => $this->getIdKey($this->_id),
                 'session' => $this->_sessionData,
-                'lefttime' => ($this->_lefttime>0 ? $this->_lefttime : Adapter::SESSION_LIFETIME),
+                'lefttime' => ($this->_lefttime>120 ? $this->_lefttime : $lefttime),
             ]
         ];
         $inerQueue = SwooleServer::getInerQueue();

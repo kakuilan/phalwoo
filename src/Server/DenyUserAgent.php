@@ -125,7 +125,6 @@ class DenyUserAgent extends LkkService implements InjectionAwareInterface {
      * @return bool
      */
     public function checkCookie() {
-        var_dump('checkCookie');
         if(!empty($this->request->cookie) && !isset($this->request->cookie[SessionAdapter::SESSION_NAME])) {
             $this->setError('cookies没有sessionId');
             return false;
