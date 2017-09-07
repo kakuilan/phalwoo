@@ -17,7 +17,7 @@ use Lkk\Phalwoo\Server\Component\Log\SwooleLogger;
 use Lkk\Phalwoo\Server\Component\Log\Handler\AsyncStreamHandler;
 use Phalcon\Di\FactoryDefault\Cli as CliDi;
 use Phalcon\Events\Manager as PhEventManager;
-
+use Lkk\Phalwoo\Server\Component\Pool\PoolManager;
 
 class SwooleServer extends LkkService {
 
@@ -35,6 +35,7 @@ class SwooleServer extends LkkService {
 
     protected $timerTaskManager; //定时任务管理器
     protected $logger; //系统日志对象
+    protected $poolManager; //连接池管理对象
 
     //命令行操作列表
     public static $cliOperations = [
@@ -130,11 +131,10 @@ class SwooleServer extends LkkService {
 
 
     /**
-     * 获取定时任务管理器
-     * @return mixed
+     * 设置DI容器
      */
-    final public static function getTimerTaskManager() {
-        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->timerTaskManager;
+    public function setServerDi() {
+        $this->serverDi = new CliDi();
     }
 
 
@@ -146,6 +146,59 @@ class SwooleServer extends LkkService {
         return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->serverDi;
     }
 
+
+    /**
+     * 设置定时任务管理器
+     */
+    public function setTimerTaskManager() {
+        $this->timerTaskManager = new TimerTaskManager(['timerTasks'=>$this->conf['timer_tasks']]);
+    }
+
+
+    /**
+     * 获取定时任务管理器
+     * @return mixed
+     */
+    final public static function getTimerTaskManager() {
+        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->timerTaskManager;
+    }
+
+
+    /**
+     * 设置系统日志对象
+     */
+    public function setLogger() {
+        $this->logger = new SwooleLogger($this->conf['sys_log']['name'], [], []);
+        $this->logger->setDefaultHandler($this->conf['sys_log']['file']);
+    }
+
+
+    /**
+     * 获取系统日志对象
+     * @return mixed
+     */
+    final public static function getLogger() {
+        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->logger;
+    }
+
+
+    /**
+     * 设置连接池管理对象
+     * @param array $conf
+     */
+    public function setPoolManager(array $conf) {
+        $this->poolManager = PoolManager::getInstance();
+        $this->poolManager->setConf($conf);
+    }
+
+
+    /**
+     * 获取连接池管理对象
+     * @return null
+     */
+    final public static function getPoolManager() {
+        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->poolManager;
+    }
 
 
     /**
@@ -498,25 +551,17 @@ class SwooleServer extends LkkService {
     }
 
 
+
     /**
      * 初始化服务
      * @return $this
      */
     public function initServer() {
-        //设置DI容器
-        $this->serverDi = new CliDi();
-
-        //设置定时器
-        $this->timerTaskManager = new TimerTaskManager(['timerTasks'=>$this->conf['timer_tasks']]);
-
-        //设置日志对象
-        if($this->conf['sys_log']['enable']) {
-            $this->logger = new SwooleLogger($this->conf['sys_log']['name'], [], []);
-            $this->logger->setDefaultHandler($this->conf['sys_log']['file']);
-        }
-
         $this->setInerQueue();
         $this->setRediQueue();
+        $this->setServerDi();
+        $this->setTimerTaskManager();
+        $this->setLogger();
 
         $httpCnf = $this->conf['http_server'];
         $this->server = new \swoole_http_server($httpCnf['host'], $httpCnf['port']);
@@ -572,6 +617,20 @@ class SwooleServer extends LkkService {
     public function reloadWorkers() {
         $this->server->reload();
         return $this;
+    }
+
+
+    /**
+     * 判断当前进程是否为Worker进程
+     * @return bool
+     */
+    public static function isWorker() {
+        $server = self::getServer();
+        if(empty($server) || !isset($server->taskworker)) {
+            return true;
+        }
+
+        return !$server->taskworker;
     }
 
 

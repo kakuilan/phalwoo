@@ -20,9 +20,10 @@ use Lkk\Phalwoo\Phalcon\Http\Response\Cookies as PwCookies;
 use Lkk\Phalwoo\Phalcon\Session\Adapter\Redis as PwSession;
 use Lkk\Phalwoo\Server\DenyUserAgent;
 use Phalcon\Crypt as PhCrypt;
-
 use Lkk\Phalwoo\Server\Component\Log\SwooleLogger;
 use Lkk\Phalwoo\Server\Component\Log\Handler\AsyncStreamHandler;
+use Lkk\Phalwoo\Server\Component\Pool\PoolManager;
+
 
 class MyServer extends SwooleServer {
 
@@ -62,9 +63,12 @@ class MyServer extends SwooleServer {
         //否则swoole事件回调时进程间不共享变量
         //TODO 添加自定义的全局变量
 
+        //TODO 读取单独的配置
+        $this->setPoolManager($this->conf['pool']);
+
         parent::initServer();
 
-        $logger = self::getProperty('logger');
+        $logger = self::getLogger();
         $logger->getDefaultHandler()->bindSwooleCloseEvent();
 
         return $this;
@@ -93,13 +97,16 @@ class MyServer extends SwooleServer {
         $response->header('Server', ($conf['server_name'] ?? 'LkkServ'));
         //var_dump('swoole-request:------------', $request);
 
-        $logger = self::getProperty('logger');
+        $logger = self::getLogger();
         $logger->info('request:', [
             'header' => $request->header ?? '',
             'server' => $request->server ?? '',
             'get' => $request->get ?? '',
             'post' => $request->post ?? '',
         ]);
+
+        $redisPool = self::getPoolManager()->get('redis_master');
+        var_dump('$redisPool', $redisPool);
 
         $di = new PwDi();
         $app = new Micro($di);
