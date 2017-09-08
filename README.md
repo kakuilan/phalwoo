@@ -76,4 +76,8 @@ signal=11 表示产生了 core dump，你需要使用 gdb 跟踪
 https://stackoverflow.com/questions/41575854/php-generator-catch-exception-and-yield
 https://stackoverflow.com/questions/16596281/is-this-implementation-a-fair-example-of-a-promise-in-php
 https://stackoverflow.com/questions/21517176/return-synchronously-when-a-react-promise-is-resolved
+https://segmentfault.com/a/1190000007760513
+https://github.com/hprose/hprose-php/wiki/03.-Promise-%E5%BC%82%E6%AD%A5%E7%BC%96%E7%A8%8B
+http://www.ituring.com.cn/article/66566
+
 
