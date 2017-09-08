@@ -41,11 +41,19 @@ class PoolManager extends LkkService {
         foreach ($conf as $name=>$item) {
             $item['name'] = $name;
             $this->conf[$name] = $item;
-
-            $this->init($name);
         }
 
         return true;
+    }
+
+
+    /**
+     * 初始化全部
+     */
+    public function initAll() {
+        foreach ($this->conf as $name => $itme) {
+            $this->init($name);
+        }
     }
 
 
