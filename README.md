@@ -30,6 +30,7 @@ server {
 部署时去掉:  
 phalcon/ide-stubs
 eaglewu/swoole-ide-helper  
+react/promise  
 
 
 $ret->send();
@@ -71,3 +72,8 @@ cron定时器基本格式 :
 ------------------
 abnormal exit, status=0, signal=11  
 signal=11 表示产生了 core dump，你需要使用 gdb 跟踪  
+
+https://stackoverflow.com/questions/41575854/php-generator-catch-exception-and-yield
+https://stackoverflow.com/questions/16596281/is-this-implementation-a-fair-example-of-a-promise-in-php
+https://stackoverflow.com/questions/21517176/return-synchronously-when-a-react-promise-is-resolved
+
