@@ -14,7 +14,6 @@ use Lkk\LkkService;
 
 class PoolManager extends LkkService {
 
-
     /**
      * @var array 配置数据
      */

@@ -22,8 +22,7 @@ class PoolFactory {
             return null;
         }
         $type = ucfirst(strtolower($config['type']));
-        $class_name = __NAMESPACE__ . '\\Adapter\\' . ucfirst($type);
-        //var_dump('$class_name', $class_name);
+        $class_name = __NAMESPACE__ . '\\Adapter\\' . $type;
         if( !class_exists($class_name) ) {
             return null;
         }

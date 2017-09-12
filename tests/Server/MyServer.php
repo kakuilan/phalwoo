@@ -23,7 +23,8 @@ use Phalcon\Crypt as PhCrypt;
 use Lkk\Phalwoo\Server\Component\Log\SwooleLogger;
 use Lkk\Phalwoo\Server\Component\Log\Handler\AsyncStreamHandler;
 use Lkk\Phalwoo\Server\Component\Pool\PoolManager;
-
+use Lkk\Phalwoo\Server\Concurrent\Promise;
+use Lkk\Phalwoo\Server\Component\Client\Mysql;
 
 class MyServer extends SwooleServer {
 
@@ -105,6 +106,17 @@ class MyServer extends SwooleServer {
         $sendRes = parent::onSwooleRequest($request, $response);
         if(!$sendRes) return $sendRes;
 
+        //协程
+        Promise::co(function() use ($request, $response){
+            yield MyServer::doSwooleRequest($request, $response);
+        });
+
+        return true;
+    }
+
+
+
+    public static function doSwooleRequest($request, $response) {
         $conf = self::getProperty('conf');
         $response->header('X-Powered-By', ($conf['server_name'] ?? 'LkkServ'));
         $response->header('Server', ($conf['server_name'] ?? 'LkkServ'));
@@ -118,13 +130,18 @@ class MyServer extends SwooleServer {
             'post' => $request->post ?? '',
         ]);
 
+        //redis连接池测试
         $redisPool = self::getPoolManager()->get('redis_master');
-        //$res1 = $redisPool->pop();
+        $res = yield $redisPool->pop()->set('abcd', time());
+        var_dump('redis_master', $res);
 
-        $chk = SwooleServer::isWorker();
+        //mysql连接池
+        $mysqlPool = self::getPoolManager()->get('mysql_master');
+        $sql = "show databases";
+        $res = yield $mysqlPool->pop()->execute($sql, false);
+        var_dump('mysql_master', $res);
 
-        $res2 = $redisPool->pop()->set('abcd', time());
-        var_dump('$redisPool', $chk, $res1, $res2);
+        //debug_print_backtrace();
 
         $di = new PwDi();
         $app = new Micro($di);

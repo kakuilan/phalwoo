@@ -129,13 +129,13 @@ return [
          */
         'mysql_master' => [
             'type'  => 'mysql',                 // 连接池类型
-            'size'  => 5,                       // 连接池大小
+            'size'  => 4,                       // 连接池大小
 
             'args'  => [                        // 连接参数
                 'host'      => '127.0.0.1',     // 主机名
                 'port'      => 3306,            // 端口号
                 'user'      => 'root',          // 用户名
-                'password'  => '123456',        // 密码
+                'password'  => 'root',        // 密码
                 'database'  => 'test',          // 数据库名称
                 'open_log'  => true,
             ]
