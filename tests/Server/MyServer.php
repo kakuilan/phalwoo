@@ -132,14 +132,14 @@ class MyServer extends SwooleServer {
 
         //redis连接池测试
         $redisPool = self::getPoolManager()->get('redis_master');
-        $res = yield $redisPool->pop()->set('abcd', time());
-        var_dump('redis_master', $res);
+        //$res = yield $redisPool->pop()->set('abcd', time());
+        //var_dump('redis_master', $res);
 
         //mysql连接池
         $mysqlPool = self::getPoolManager()->get('mysql_master');
         $sql = "show databases";
-        $res = yield $mysqlPool->pop()->execute($sql, false);
-        var_dump('mysql_master', $res);
+        //$res = yield $mysqlPool->pop()->execute($sql, false);
+        //var_dump('mysql_master', $res);
 
         //debug_print_backtrace();
 
