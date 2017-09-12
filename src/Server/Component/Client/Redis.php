@@ -215,6 +215,8 @@ class Redis {
             return $promise;
         }
 
+        echo " redis _call mode:$this->mode \r\n";
+
         switch ($this->mode) {
             case ServerConst::MODE_ASYNC : {
                 $this->inPool();

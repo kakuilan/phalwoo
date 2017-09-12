@@ -21,7 +21,8 @@
     "monolog/monolog": "^1.22",
     "phpunit/phpunit": "^6.1",
     "mtdowling/cron-expression": "^1.2",
-    "react/promise": "^2.5"
+    "react/promise": "^2.5",
+    "hprose/hprose": ">=2.0.0"
   },
   "require-dev": {
     "kakuilan/kphplib": "dev-master",

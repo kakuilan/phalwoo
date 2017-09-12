@@ -120,8 +120,11 @@ class MyServer extends SwooleServer {
 
         $redisPool = self::getPoolManager()->get('redis_master');
         //$res1 = $redisPool->pop();
-        $res2 = $redisPool->pop()->set('abcd', 22222);
-        var_dump('$redisPool', $res1, $res2);
+
+        $chk = SwooleServer::isWorker();
+
+        $res2 = $redisPool->pop()->set('abcd', time());
+        var_dump('$redisPool', $chk, $res1, $res2);
 
         $di = new PwDi();
         $app = new Micro($di);
