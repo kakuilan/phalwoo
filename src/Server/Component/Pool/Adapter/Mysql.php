@@ -23,11 +23,11 @@ class Mysql extends Adapter {
      */
     private $sync;
 
-    public function __construct($config) {
-        $this->conf = $config;
-        $this->conf['name'] = $this->conf['name'] ?? __FILE__;
-        $this->conf['size'] = $this->conf['size'] ?? 5;
-        parent::__construct($config['name'], $this->conf['size']);
+    public function __construct($conf) {
+        $this->conf = $conf;
+        $this->conf['name'] = $conf['name'] ?? __FILE__;
+        $this->conf['size'] = $conf['size'] ?? 5;
+        parent::__construct($this->conf['name'], $this->conf['size']);
     }
 
 

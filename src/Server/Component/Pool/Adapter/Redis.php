@@ -28,8 +28,8 @@ class Redis extends Adapter {
 
     public function __construct(array $conf) {
         $this->conf = $conf;
-        $this->conf['name'] = $this->conf['name'] ?? __CLASS__;
-        $this->conf['size'] = 1;
+        $this->conf['name'] = $conf['name'] ?? __CLASS__;
+        $this->conf['size'] = $conf['size'] ?? 2;
 
         parent::__construct($this->conf['name'], $this->conf['size']);
     }

@@ -95,8 +95,10 @@ class MyServer extends SwooleServer {
     public static function onSwooleWorkerStart($serv, $workerId) {
         parent::onSwooleWorkerStart($serv, $workerId);
 
+        self::getPoolManager()->initAll();
+
         if($workerId==0) {
-            self::getPoolManager()->initAll();
+
         }
 
     }
