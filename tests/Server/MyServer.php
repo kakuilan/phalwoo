@@ -25,7 +25,7 @@ use Lkk\Phalwoo\Server\Component\Log\Handler\AsyncStreamHandler;
 use Lkk\Phalwoo\Server\Component\Pool\PoolManager;
 use Lkk\Phalwoo\Server\Concurrent\Promise;
 use Lkk\Phalwoo\Server\Component\Client\Mysql;
-use Lkk\Phalwoo\Server\Component\Pool\Adapter as PoolAdapter;
+
 
 class MyServer extends SwooleServer {
 
@@ -57,19 +57,6 @@ class MyServer extends SwooleServer {
     public static function destroy() {
         parent::$instance = null;
         self::$_instance = null;
-    }
-
-
-    /**
-     * 初始化连接池队列
-     * @param array $conf
-     */
-    private function initPoolQueue($conf=[]) {
-        foreach ($conf as $poolName=>$item) {
-            foreach (PoolAdapter::$queueTypes as $type) {
-                $this->setPoolQueue($poolName, $type);
-            }
-        }
     }
 
 

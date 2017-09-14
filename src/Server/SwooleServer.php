@@ -18,6 +18,7 @@ use Lkk\Phalwoo\Server\Component\Log\Handler\AsyncStreamHandler;
 use Phalcon\Di\FactoryDefault\Cli as CliDi;
 use Phalcon\Events\Manager as PhEventManager;
 use Lkk\Phalwoo\Server\Component\Pool\PoolManager;
+use Lkk\Phalwoo\Server\Component\Pool\Adapter as PoolAdapter;
 
 class SwooleServer extends LkkService {
 
@@ -200,6 +201,20 @@ class SwooleServer extends LkkService {
     final public static function getPoolManager() {
         return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->poolManager;
     }
+
+
+    /**
+     * 初始化连接池队列
+     * @param array $conf
+     */
+    protected function initPoolQueue($conf=[]) {
+        foreach ($conf as $poolName=>$item) {
+            foreach (PoolAdapter::$queueTypes as $type) {
+                $this->setPoolQueue($poolName, $type);
+            }
+        }
+    }
+
 
 
     /**
