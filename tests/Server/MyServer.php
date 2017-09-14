@@ -25,6 +25,7 @@ use Lkk\Phalwoo\Server\Component\Log\Handler\AsyncStreamHandler;
 use Lkk\Phalwoo\Server\Component\Pool\PoolManager;
 use Lkk\Phalwoo\Server\Concurrent\Promise;
 use Lkk\Phalwoo\Server\Component\Client\Mysql;
+use Lkk\Phalwoo\Server\Component\Pool\Adapter as PoolAdapter;
 
 class MyServer extends SwooleServer {
 
@@ -59,6 +60,20 @@ class MyServer extends SwooleServer {
     }
 
 
+    /**
+     * 初始化连接池队列
+     * @param array $conf
+     */
+    private function initPoolQueue($conf=[]) {
+        foreach ($conf as $poolName=>$item) {
+            foreach (PoolAdapter::$queueTypes as $type) {
+                $this->setPoolQueue($poolName, $type);
+            }
+        }
+    }
+
+
+
     public function initServer() {
         //所有全局变量应在swoole事件绑定前设置好
         //否则swoole事件回调时进程间不共享变量
@@ -66,6 +81,7 @@ class MyServer extends SwooleServer {
 
         //TODO 读取单独的配置
         $this->setPoolManager($this->conf['pool']);
+        $this->initPoolQueue($this->conf['pool']);
 
         parent::initServer();
 

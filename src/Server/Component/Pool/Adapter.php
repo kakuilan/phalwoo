@@ -38,6 +38,13 @@ abstract class Adapter {
      */
     protected $name;
 
+
+    /**
+     * 队列类型
+     * @var array
+     */
+    public static $queueTypes = ['idle_queue', 'waiting_tasks'];
+
     protected function __construct($name, $size) {
         $this->name         = $name;
         $this->size         = $size;

@@ -241,14 +241,13 @@ class SwooleServer extends LkkService {
      * 设置连接池队列
      * @param string $poolName 连接池名称
      * @param string $type 类型
-     * @param int $size 队列长度
      * @return mixed
      */
-    protected function setPoolQueue(string $poolName, $type = '', $size = 512) {
+    protected function setPoolQueue(string $poolName, $type = '') {
         $key = $poolName.$type;
 
         if(is_null($this->poolqueues) || !isset($this->poolqueues[$key])) {
-            $this->poolqueues[$key] = new \Swoole\Channel($size);
+            $this->poolqueues[$key] = new \Swoole\Channel(128 * 1024);
         }
 
         return $this->poolqueues[$key];
