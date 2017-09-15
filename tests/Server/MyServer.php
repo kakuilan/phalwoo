@@ -68,7 +68,6 @@ class MyServer extends SwooleServer {
 
         //TODO 读取单独的配置
         $this->setPoolManager($this->conf['pool']);
-        $this->initPoolQueue($this->conf['pool']);
 
         parent::initServer();
 
@@ -96,13 +95,9 @@ class MyServer extends SwooleServer {
 
 
     public static function onSwooleWorkerStart($serv, $workerId) {
-        parent::onSwooleWorkerStart($serv, $workerId);
-
         self::getPoolManager()->initAll();
 
-        if($workerId==0) {
-
-        }
+        parent::onSwooleWorkerStart($serv, $workerId);
 
     }
 
@@ -137,7 +132,7 @@ class MyServer extends SwooleServer {
 
         //redis连接池测试
         $redisPool = self::getPoolManager()->get('redis_master');
-        $res = yield $redisPool->pop()->set('abcd', time());
+        $res = yield $redisPool->pop()->set('hehe', time());
         //var_dump('redis_master', $res);
 
         //mysql连接池

@@ -129,7 +129,7 @@ return [
          */
         'mysql_master' => [
             'type'  => 'mysql',                 // 连接池类型
-            'size'  => 50,                       // 连接池大小
+            'size'  => 40,                       // 连接池大小
 
             'args'  => [                        // 连接参数
                 'host'      => '127.0.0.1',     // 主机名
@@ -151,8 +151,9 @@ return [
             'args'  => [
                 'host'      => '127.0.0.1',     // 主机名
                 'port'      => 6379,            // 端口号
+                'auth'      => null,            // 口令
                 'select'    => 0,               // 库编号
-                'auth'      => null             // 口令
+                'prefix'    => 't:',            // 前缀
             ]
         ],
     ],

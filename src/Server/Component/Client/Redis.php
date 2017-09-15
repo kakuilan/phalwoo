@@ -181,6 +181,7 @@ class Redis {
                     if( isset($this->conf['pwd']) ) {
                         $this->link->auth($this->conf['pwd']);
                     }
+                    if($this->conf['prefix']) $this->link->setOption(\Redis::OPT_PREFIX, $this->conf['prefix']);
                     $this->link->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
                     $this->link->select($this->conf['select']);
                     $promise->resolve([
@@ -227,6 +228,12 @@ class Redis {
                         'code'  => ServerConst::ERR_REDIS_TIMEOUT
                     ]);
                 });
+
+                //前缀处理
+                if($this->conf['prefix'] && isset($arguments[0]) && !is_numeric($arguments[0]) && is_string($arguments[0])) {
+                    $arguments[0] = $this->conf['prefix'] . $arguments[0];
+                }
+
                 $arguments[$index] = function (\swoole_redis $client, $result) use ($timeId, $promise){
                     \swoole_timer_clear($timeId);
                     if( $result === false ) {

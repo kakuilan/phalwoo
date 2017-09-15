@@ -29,7 +29,6 @@ class SwooleServer extends LkkService {
 
     protected $inerqueue; //内部队列,非持久化工作
     protected $rediqueue; //redis持久化队列
-    protected $poolqueues; //连接池队列
 
     protected $servName; //服务名
     protected $listenIP; //监听IP
@@ -203,19 +202,6 @@ class SwooleServer extends LkkService {
     }
 
 
-    /**
-     * 初始化连接池队列
-     * @param array $conf
-     */
-    protected function initPoolQueue($conf=[]) {
-        foreach ($conf as $poolName=>$item) {
-            foreach (PoolAdapter::$queueTypes as $type) {
-                $this->setPoolQueue($poolName, $type);
-            }
-        }
-    }
-
-
 
     /**
      * 设置内置队列对象
@@ -249,35 +235,6 @@ class SwooleServer extends LkkService {
      */
     final public static function getRediQueue() {
         return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->rediqueue;
-    }
-
-
-    /**
-     * 设置连接池队列
-     * @param string $poolName 连接池名称
-     * @param string $type 类型
-     * @return mixed
-     */
-    protected function setPoolQueue(string $poolName, $type = '') {
-        $key = $poolName.$type;
-
-        if(is_null($this->poolqueues) || !isset($this->poolqueues[$key])) {
-            $this->poolqueues[$key] = new \Swoole\Channel(128 * 1024);
-        }
-
-        return $this->poolqueues[$key];
-    }
-
-
-    /**
-     * 获取连接池队列
-     * @param string $poolName 连接池名称
-     * @param string $type 类型
-     * @return null
-     */
-    final public function getPoolQueue(string $poolName, $type = '') {
-        $key = $poolName.$type;
-        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : (self::$instance->poolqueues[$key]??null);
     }
 
 
