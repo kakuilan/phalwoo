@@ -196,7 +196,7 @@ class Cookie extends PhalconCookie implements CookieInterface, InjectionAwareInt
             throw new Exception("A dependency injection object is required to access the 'session' service");
         }
 
-        $session = $di->getShared('session');
+        /*$session = $di->getShared('session');
         if($session->isStarted() && $session->getWritable()) {
             $definition = ['encrypt' => $this->_useEncryption];
             if ($expire != 0) {
@@ -220,7 +220,7 @@ class Cookie extends PhalconCookie implements CookieInterface, InjectionAwareInt
             }
 
             $session->set('_PHCOOKIE_' . $name, $definition);
-        }
+        }*/
 
         if ($this->_useEncryption) {
             if (!empty($value)) {
@@ -253,7 +253,7 @@ class Cookie extends PhalconCookie implements CookieInterface, InjectionAwareInt
         if (!$this->_restored) {
             $di = $this->_dependencyInjector;
             if (is_object($di)) {
-                $session = $di->getShared('session');
+                /*$session = $di->getShared('session');
                 if ($session->isStarted()) {
                     $definition = $session->get('_PHCOOKIE_'  .$this->_name);
                     if (is_array($definition)) {
@@ -281,7 +281,7 @@ class Cookie extends PhalconCookie implements CookieInterface, InjectionAwareInt
                             $this->useEncryption($definition['encrypt']);
                         }
                     }
-                }
+                }*/
             }
 
             $this->_restored = true;
@@ -306,15 +306,16 @@ class Cookie extends PhalconCookie implements CookieInterface, InjectionAwareInt
         $di = $this->_dependencyInjector;
         if (is_object($di)) {
             /** @var AdapterInterface $session */
-            $session = $di->getShared('session');
+            /*$session = $di->getShared('session');
 
             if ($session->isStarted()) {
                 $session->remove("_PHCOOKIE_" . $name);
-            }
+            }*/
         }
         $this->_value = null;
 
         $this->getSwooleResponse()->cookie($name, null, time() - 691200, $path, $domain, $secure, $httpOnly);
+        return true;
     }
 
 

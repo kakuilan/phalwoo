@@ -12,6 +12,7 @@ namespace Lkk\Phalwoo\Server;
 
 use Lkk\LkkService;
 use Lkk\Helpers\CommonHelper;
+use Lkk\Helpers\EncryptHelper;
 use Lkk\Helpers\ValidateHelper;
 use Lkk\Phalwoo\Server\Component\Log\SwooleLogger;
 use Lkk\Phalwoo\Server\Component\Log\Handler\AsyncStreamHandler;
@@ -822,6 +823,10 @@ class SwooleServer extends LkkService {
         self::instance()->eventFire(__FUNCTION__);
         echo "on Request...\r\n";
 
+        $conf = self::getProperty('conf');
+        $response->header('X-Powered-By', ($conf['server_name'] ?? 'apache'));
+        $response->header('Server', ($conf['server_name'] ?? 'apache'));
+
         //不解析静态资源
         if ($request->server['request_uri'] == '/favicon.ico' || $request->server['path_info'] == '/favicon.ico') {
             $response->end();
@@ -877,7 +882,7 @@ class SwooleServer extends LkkService {
                     call_user_func_array($callback, $params);
                     break;
                 case '' :default :
-                    break;
+                break;
             }
         }
 
@@ -929,6 +934,51 @@ class SwooleServer extends LkkService {
     }
 
 
+    /**
+     * 重置请求的全局变量(为了兼容旧的代码)
+     * @param \swoole_http_request $request
+     */
+    public static function resetRequestGlobal(\swoole_http_request $request) {
+        //只重置$_SERVER
+        //将HTTP头信息赋值给$_SERVER超全局变量
+        if(isset($request->header)) {
+            foreach ($request->header as $key => $value) {
+                $_key = 'HTTP_' . strtoupper(str_replace('-', '_', $key));
+                $_SERVER[$_key] = $value;
+            }
+        }
+
+        if(isset($request->server)) {
+            foreach ($request->server as $key => $value) {
+                $_key = strtoupper($key);
+                $_SERVER[$_key] = $value;
+            }
+        }
+
+        $_SERVER['SCRIPT_NAME'] = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
+        $_SERVER['_request_uuid'] = self::makeRequestUuid($request);
+    }
+
+
+    /**
+     * 生成请求的uuid
+     * @param $swooleRequest
+     *
+     * @return int
+     */
+    public static function makeRequestUuid($swooleRequest) {
+        $res  = 0;
+        if(is_object($swooleRequest)) {
+            $get = $swooleRequest->get ?? [];
+            $cookie = $swooleRequest->cookie ?? [];
+            $server = $swooleRequest->server ?? [];
+            $arr = array_merge($get, $cookie, $server);
+            sort($arr);
+            $res = EncryptHelper::murmurhash3_int(json_encode($arr), 13, true);
+        }
+
+        return $res;
+    }
 
 
 

@@ -112,15 +112,17 @@ class Cookies extends PhalconCookies implements CookiesInterface, InjectionAware
         $cookie->setDi($di);
 
         $encryption = $this->_useEncryption;
-        $session = $di->getShared('session');
+        if (is_bool($encrypt)) {
+            $encryption = $encrypt;
+        }
+
+        /*$session = $di->getShared('session');
         if ($session->isStarted() && $session->getId()) {
             $definition = $session->get('_PHCOOKIE_'  .$name);
             if (isset($definition['encrypt'])) {
                 $encryption = $definition['encrypt'];
             }
-        }elseif (is_bool($encrypt)) {
-            $encryption = $encrypt;
-        }
+        }*/
 
         if($encryption){
             $cookie->useEncryption($encryption);

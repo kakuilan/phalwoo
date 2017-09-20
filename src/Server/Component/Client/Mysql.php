@@ -14,6 +14,7 @@ use Lkk\Phalwoo\Server\SwooleServer;
 use Lkk\Phalwoo\Server\ServerConst;
 use Lkk\Phalwoo\Server\Component\Pool\Adapter as PoolAdapter;
 use Lkk\Phalwoo\Server\Concurrent\Promise;
+use Lkk\Helpers\CommonHelper;
 
 class Mysql {
 
@@ -98,7 +99,7 @@ class Mysql {
             case ServerConst::MODE_ASYNC : {
                 $this->db = new \swoole_mysql();
                 $this->db->on('Close', function($db){
-                    //Log::INFO('MySQL', "Close connection {$this->id}" );
+                    SwooleServer::getLogger()->error("ASYNC MySQL Close connection {$this->id}");
                     $this->close = true;
                     unset($this->db);
                     $this->inPool(true);
@@ -110,7 +111,7 @@ class Mysql {
                 $this->db->connect($this->conf, function($db, $r) use ($promise,$timeId) {
                     swoole_timer_clear($timeId);
                     if ($r === false) {
-                        //Log::ERROR('MySQL' , sprintf("Connect MySQL Failed [%d]: %s", $db->connect_errno, $db->connect_error));
+                        SwooleServer::getLogger()->error(sprintf("ASYNC MySQL Connect Failed [%d]: %s", $db->connect_errno, $db->connect_error));
                         $promise->reject(ServerConst::ERR_MYSQL_CONNECT_FAILED);
                         return;
                     }
@@ -129,7 +130,7 @@ class Mysql {
                 $this->link = new \mysqli($dbHost, $dbUser, $dbPwd, $dbName);
 
                 if ($this->link->connect_error) {
-                    //Log::ERROR('MySQL' , sprintf("Connect MySQL Failed [%d]: %s", $this->link->connect_errno, $this->link->connect_error));
+                    SwooleServer::getLogger()->error(sprintf("SYNC MySQL Connect Failed [%d]: %s", $this->link->connect_errno, $this->link->connect_error));
                     $promise->reject(ServerConst::ERR_MYSQL_CONNECT_FAILED);
                     break;
                 }
@@ -183,26 +184,26 @@ class Mysql {
         switch ($this->mode) {
             case ServerConst::MODE_ASYNC : {
                 $timeId = swoole_timer_after($timeout, function() use ($promise, $sql){
-                    //Log::ERROR('MySQL', [$sql, -1, "timeout"]);
+                    SwooleServer::getLogger()->warning("ASYNC MySQL timeout", [$sql, -1, "timeout"]);
                     $this->inPool();
                     $promise->resolve([
                         'code' => ServerConst::ERR_MYSQL_TIMEOUT,
                     ]);
                 });
-                $time = microtime(true) * 1000;
+                $time = CommonHelper::getMillisecond();
                 $this->db->query($sql, function($db, $result) use ($sql, $promise, $timeId, $get_one, $time){
                     $this->inPool();
                     swoole_timer_clear($timeId);
                     if($result === false) {
-                        //Log::ERROR('MySQL', [$sql, $db->errno, $db->error]);
+                        SwooleServer::getLogger()->error("ASYNC MySQL err", [$sql, $db->errno, $db->error]);
                         $promise->resolve([
                             'code'  => ServerConst::ERR_MYSQL_QUERY_FAILED,
                             'errno' => $db->errno
                         ]);
                     } else {
                         if($this->open_log) {
-                            $time = microtime(true) * 1000 - $time;
-                            //Log::INFO('MySQL', [$time, $sql]);
+                            $time = CommonHelper::getMillisecond() - $time;
+                            SwooleServer::getLogger()->info("ASYNC MySQL execute time", [$time, $sql]);
                         }
                         if($result === true) {
                             $promise->resolve([
@@ -221,24 +222,24 @@ class Mysql {
                 break;
             }
             case ServerConst::MODE_SYNC : {
-                $time = microtime(true) * 1000;
+                $time = CommonHelper::getMillisecond();
                 $result = $this->link->query($sql);
                 if($this->link->errno == 2006) {
                     $this->close();
                     $this->connect($this->id);
-                    $time = microtime(true) * 1000;
+                    $time = CommonHelper::getMillisecond();
                     $result = $this->link->query($sql);
                 }
                 if($result === false) {
-                    //Log::ERROR('MySQL', [$sql, $this->link->errno, $this->link->error]);
+                    SwooleServer::getLogger()->error("SYNC MySQL err", [$sql, $this->link->errno, $this->link->error]);
                     $promise->resolve([
                         'code'  => ServerConst::ERR_MYSQL_QUERY_FAILED,
                         'errno' => $this->link->errno
                     ]);
                 } else {
                     if($this->open_log) {
-                        $time = microtime(true) * 1000 - $time;
-                        //Log::INFO('MySQL', [$time, $sql]);
+                        $time = CommonHelper::getMillisecond() - $time;
+                        SwooleServer::getLogger()->info("ASYNC MySQL execute time", [$time, $sql]);
                     }
                     if($result === true) {
                         $promise->resolve([
@@ -259,6 +260,39 @@ class Mysql {
         }
 
         return $promise;
+    }
+
+
+    /**
+     * 开启事务
+     * @return mixed
+     */
+    public function begin() {
+        $sql = 'begin';
+        $res = yield $this->execute($sql, true);
+        return $res;
+    }
+
+
+    /**
+     * 提交事务
+     * @return mixed
+     */
+    public function commit() {
+        $sql = 'commit';
+        $res = yield $this->execute($sql, true);
+        return $res;
+    }
+
+
+    /**
+     * 回滚事务
+     * @return mixed
+     */
+    public function rollback() {
+        $sql = 'rollback';
+        $res = yield $this->execute($sql, true);
+        return $res;
     }
 
 

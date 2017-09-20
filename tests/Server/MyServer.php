@@ -29,7 +29,6 @@ use Lkk\Phalwoo\Server\Component\Client\Mysql;
 
 class MyServer extends SwooleServer {
 
-    protected $logger;
 
     public function __construct(array $vars = []) {
         parent::__construct($vars);

@@ -116,12 +116,11 @@ class Redis {
     public function connect($id, $timeout = 3000) {
         $this->id = $id;
         $promise = new Promise();
-        $logger = SwooleServer::getLogger();
         switch ($this->mode) {
             case ServerConst::MODE_ASYNC : {
                 $this->db = new \swoole_redis();
                 $this->db->on("close", function(){
-                    SwooleServer::getLogger()->info("Redis Close connection {$this->id}");
+                    SwooleServer::getLogger()->error("ASYNC Redis Close connection {$this->id}");
                     $this->connect($this->id);
                 });
                 $timeId = swoole_timer_after($timeout, function() use ($promise){
@@ -134,6 +133,7 @@ class Redis {
                     function (\swoole_redis $client, $result) use($timeId,$promise){
                         \swoole_timer_clear($timeId);
                         if( $result === false ) {
+                            SwooleServer::getLogger()->error("ASYNC Redis Connect Failed {$this->id}");
                             $promise->resolve([
                                 'code'      => ServerConst::ERR_REDIS_CONNECT_FAILED,
                                 'errCode'   => $client->errCode,
@@ -170,7 +170,7 @@ class Redis {
             case ServerConst::MODE_SYNC : {
                 $this->link = new \Redis();
                 try {
-                    $result = $this->link->connect($this->conf['host'], $this->conf['port'], $timeout);
+                    $result = $this->link->pconnect($this->conf['host'], $this->conf['port'], $timeout);
                     if( !$result ) {
                         $promise->resolve([
                             'code'      => ServerConst::ERR_REDIS_CONNECT_FAILED,
@@ -188,6 +188,7 @@ class Redis {
                         'code'  => ServerConst::ERR_SUCCESS
                     ]);
                 }catch (\RedisException $e) {
+                    SwooleServer::getLogger()->error("SYNC Redis Connect Failed {$this->id}");
                     $promise->resolve([
                         'code'      => ServerConst::ERR_REDIS_CONNECT_FAILED,
                         'errCode'   => $e->getCode(),
@@ -221,7 +222,6 @@ class Redis {
         switch ($this->mode) {
             case ServerConst::MODE_ASYNC : {
                 $this->inPool();
-                $index = count($arguments);
                 $timeId = swoole_timer_after($this->timeout, function() use ($promise){
                     $this->close();
                     $promise->resolve([
@@ -230,10 +230,19 @@ class Redis {
                 });
 
                 //前缀处理
-                if($this->conf['prefix'] && isset($arguments[0]) && !is_numeric($arguments[0]) && is_string($arguments[0])) {
-                    $arguments[0] = $this->conf['prefix'] . $arguments[0];
+                if($this->conf['prefix']) {
+                    if(stripos($name, 'del')===0) { //删除操作,兼容不带前缀的输入key
+                        $newArgs = [];
+                        foreach ($arguments as $argument) {
+                            array_push($newArgs, $this->conf['prefix'] . $argument);
+                        }
+                        $arguments = array_merge($arguments, $newArgs);
+                    }elseif (isset($arguments[0]) && !is_numeric($arguments[0]) && is_string($arguments[0])) {
+                        $arguments[0] = $this->conf['prefix'] . $arguments[0];
+                    }
                 }
 
+                $index = count($arguments);
                 $arguments[$index] = function (\swoole_redis $client, $result) use ($timeId, $promise){
                     \swoole_timer_clear($timeId);
                     if( $result === false ) {
@@ -249,6 +258,7 @@ class Redis {
                         'data'  => $result
                     ]);
                 };
+
                 call_user_func_array([$this->db, $name], $arguments);
                 break;
             }

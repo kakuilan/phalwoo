@@ -271,7 +271,7 @@ class Redis extends Adapter {
         $inerQueue->push($workData);
         $state = $inerQueue->stats();
 
-        echo "队列记录数 {$state['queue_num']}\r\n";
+        //echo "session queue len: {$state['queue_num']}\r\n";
         return true;
     }
 

@@ -41,6 +41,9 @@ class Request implements RequestInterface, InjectionAwareInterface {
     private $_files;
 
 
+    private $_requestUuid = null;
+
+
     /**
      * Sets the dependency injector
      *
@@ -975,6 +978,19 @@ class Request implements RequestInterface, InjectionAwareInterface {
         }
 
         return null;
+    }
+
+
+    /**
+     * 获取请求的uuid
+     * @return string
+     */
+    public function getRequestUuid() {
+        if(is_null($this->_requestUuid)) {
+            $this->_requestUuid = SwooleServer::makeRequestUuid($this->_swooleRequest);
+        }
+
+        return $this->_requestUuid;
     }
 
 

@@ -62,7 +62,7 @@ class Redis extends Adapter {
                 return $promise;
             }
             $driver = $this->idle_queue->dequeue();
-            return $driver;
+            return ($driver instanceof Driver) ? $driver : $this->sync;
         } else {
             return $this->sync;
         }

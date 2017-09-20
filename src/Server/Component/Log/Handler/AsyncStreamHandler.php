@@ -185,7 +185,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
         $logger->setIsWriting(true);
         swoole_async_writefile($this->url, $str, function($filename) use($logger) {
             $logger->setIsWriting(false);
-            echo "logger write done.\r\n";
+            //echo "logger write done.\r\n";
 
             //TODO 这里日志切割有问题,放到定时器里面切割?
             if(file_exists($filename) && filesize($filename) >= $logger->maxFileSize){
@@ -253,7 +253,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
         $logger = $this;
         $eventManager = $di->get('eventsManager');
         $eventManager->attach('SwooleServer:onSwooleClose', function () use($logger) {
-            echo "logger event callback\r\n";
+            //echo "logger event callback\r\n";
             $logger->flush();
             return true;
         });
