@@ -30,6 +30,7 @@ class Paginate extends \stdClass {
         if($page<=0) $page = 1;
         if($limit<=0) $limit = 10;
         $pages = $total ? ceil($total / $limit) : 0;
+        if($pages && $page>$pages) $page = $pages;
 
         $this->first = $total ? 1 : 0;
         $this->before = $page >1 ? ($page-1) : 1;
@@ -46,7 +47,12 @@ class Paginate extends \stdClass {
 
 
     public function setItems(array $items=[]) {
-        $this->items = new Async($items, ArrayObject::STD_PROP_LIST);
+        $this->items = empty($items) ? [] : new Async($items, ArrayObject::STD_PROP_LIST);
+    }
+
+
+    public function getItems() {
+        return $this->items;
     }
 
 
@@ -111,7 +117,7 @@ class Paginate extends \stdClass {
      *
      * @return integer
      */
-    public function count() {
+    public function getCount() {
         return $this->total_items;
     }
 

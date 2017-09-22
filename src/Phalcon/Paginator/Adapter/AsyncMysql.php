@@ -13,7 +13,7 @@ namespace Lkk\Phalwoo\Phalcon\Paginator\Adapter;
 use Phalcon\Paginator\Adapter;
 use Phalcon\Mvc\Model\Query\Builder;
 use Lkk\Phalwoo\Server\SwooleServer;
-
+use Lkk\Phalwoo\Phalcon\Paginator\Paginate;
 
 class AsyncMysql extends Adapter {
 
@@ -29,6 +29,8 @@ class AsyncMysql extends Adapter {
 
 
     protected $_count;
+
+    protected $_errorMessages;
 
     //SQL查询相关
     protected $_columns;
@@ -108,42 +110,56 @@ class AsyncMysql extends Adapter {
 
     //执行查询
     private function runQuery() {
-        //$sql = "SELECT * FROM lkk_action WHERE ac_id>0 ORDER BY ac_id DESC LIMIT 5,4 ";
         $this->_columns = $this->_builder->getColumns();
         $model = $this->_builder->getFrom();
         $this->_table = $model::getTableName();
         $this->_where = $this->_builder->getWhere();
         $this->_order = $this->_builder->getOrderBy();
 
-        $countSql   = "SELECT COUNT(1) AS num FROM {$this->_table} WHERE {$this->_where} ";
-        $listSql    = "SELECT {$this->_columns} FROM {$this->_table} WHERE {$this->_where} ";
-        if($this->_order) $listSql .= " {$this->_order} ";
-        $listSql .= " LIMIT {$this->_offset},{$this->_limitRows} ";
-
         $sqlArr = $this->_builder->getQuery()->getSql();
-        $baseSql = preg_replace_callback('/SELECT (.*) FROM .* WHERE .*/i', function ($matches) {
+        $baseSql = preg_replace_callback('/SELECT\s+(.*)\s+FROM\s+(.*)\s+WHERE\s+((?!order\s+by).)*((order\s+by)?.*)/i', function ($matches) {
             if(isset($matches[1])) {
                 $matches[0] = str_replace($matches[1], " COUNT(1) AS num ", $matches[0]);
+                if(isset($matches[4])) {
+                    $matches[0] = str_replace($matches[4], '', $matches[0]);
+                }
+                return $matches[0];
+            }else{
+                return false;
             }
-            return $matches[0];
         }, $sqlArr['sql']);
 
-        $asyncMysql = SwooleServer::getPoolManager()->get('mysql_master')->pop();
+        if(empty($baseSql)) {
+            $this->setError('parse sql error.');
+            return false;
+        }
 
         //统计
+        $asyncMysql = SwooleServer::getPoolManager()->get('mysql_master')->pop();
         $couuntRes = yield $asyncMysql->execute($baseSql, true);
         if($couuntRes['code']==0) {
             $this->_count = $couuntRes['data']['num'];
+            if($this->_offset >= $this->_count) {
+                $items = [];
+            }else{
+                //查询
+                $listSql = $baseSql . " LIMIT {$this->_offset},{$this->_limitRows} ";
+                $listRes = yield $asyncMysql->execute($listSql, false);
+                if($listRes['code']==0) {
+                    $items = $listRes['data'];
+                }else{
+                    $this->setError('query list sql error.');
+                    return false;
+                }
+            }
 
-            //查询
+            $this->paginateResult = new Paginate($this->_page, $this->_limitRows, $this->_count, $items);
         }else{
-
+            $this->setError('query count sql error.');
+            return false;
         }
 
-
-
-
-
+        return true;
     }
 
 
@@ -225,6 +241,16 @@ class AsyncMysql extends Adapter {
      */
     public function getCount() {
         return intval($this->_count);
+    }
+
+
+    public function setError($msg) {
+        $this->_errorMessages = $msg;
+    }
+
+
+    public function getError() {
+        return $this->_errorMessages;
     }
 
 

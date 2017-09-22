@@ -46,9 +46,6 @@ class Async extends ArrayObject implements ResultsetInterface {
     protected $_row = null;
 
 
-    protected $_errorMessages;
-
-
     protected $_asyncResMode = self::ASYNC_OBJECTS;
 
     /**
@@ -146,8 +143,6 @@ class Async extends ArrayObject implements ResultsetInterface {
 
         parent::__construct($input, ArrayObject::ARRAY_AS_PROPS);
     }
-
-
 
 
 }
