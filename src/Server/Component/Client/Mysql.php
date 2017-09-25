@@ -66,6 +66,14 @@ class Mysql {
      */
     private $close = true;
 
+
+    /**
+     * 是否有事务
+     * @var bool
+     */
+    private $isTransaction = false;
+
+
     /**
      * MySQL constructor.
      * @param $config       array       配置选项
@@ -268,8 +276,14 @@ class Mysql {
      * @return mixed
      */
     public function begin() {
+        if($this->isTransaction) {
+            throw new \Exception('有旧的事务未提交或回滚');
+        }
+
         $sql = 'begin';
         $res = yield $this->execute($sql, true);
+        $this->isTransaction = true;
+
         return $res;
     }
 
@@ -279,8 +293,14 @@ class Mysql {
      * @return mixed
      */
     public function commit() {
+        if(!$this->isTransaction) {
+            throw new \Exception('没有事务待提交');
+        }
+
         $sql = 'commit';
         $res = yield $this->execute($sql, true);
+        $this->isTransaction = false;
+
         return $res;
     }
 
@@ -290,9 +310,24 @@ class Mysql {
      * @return mixed
      */
     public function rollback() {
+        if(!$this->isTransaction) {
+            throw new \Exception('没有事务待回滚');
+        }
+
         $sql = 'rollback';
         $res = yield $this->execute($sql, true);
+        $this->isTransaction = false;
+
         return $res;
+    }
+
+
+    /**
+     * 是否有事务未执行
+     * @return bool
+     */
+    public function isTransaction() {
+        return $this->isTransaction;
     }
 
 

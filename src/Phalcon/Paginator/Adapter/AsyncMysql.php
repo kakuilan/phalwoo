@@ -101,7 +101,7 @@ class AsyncMysql extends Adapter {
      */
     public function getPaginate() {
         if(is_null($this->paginateResult)) {
-            $this->runQuery();
+            yield $this->runQuery();
         }
 
         return $this->paginateResult;
@@ -110,16 +110,16 @@ class AsyncMysql extends Adapter {
 
     //执行查询
     private function runQuery() {
-        $this->_columns = $this->_builder->getColumns();
+        /*$this->_columns = $this->_builder->getColumns();
         $model = $this->_builder->getFrom();
         $this->_table = $model::getTableName();
         $this->_where = $this->_builder->getWhere();
-        $this->_order = $this->_builder->getOrderBy();
+        $this->_order = $this->_builder->getOrderBy();*/
 
         $sqlArr = $this->_builder->getQuery()->getSql();
-        $baseSql = preg_replace_callback('/SELECT\s+(.*)\s+FROM\s+(.*)\s+WHERE\s+((?!order\s+by).)*((order\s+by)?.*)/i', function ($matches) {
+        $baseSql = preg_replace_callback('/SELECT\s+(.*)\s+FROM\s+[`a-zA-Z_]+(\s+WHERE)?\s+((?!ORDER\s+BY).)*((ORDER\s+BY)?.*)/i', function ($matches) {
             if(isset($matches[1])) {
-                $matches[0] = str_replace($matches[1], " COUNT(1) AS num ", $matches[0]);
+                $matches[0] = str_replace($matches[1], " COUNT(1) AS total ", $matches[0]);
                 if(isset($matches[4])) {
                     $matches[0] = str_replace($matches[4], '', $matches[0]);
                 }
@@ -138,12 +138,12 @@ class AsyncMysql extends Adapter {
         $asyncMysql = SwooleServer::getPoolManager()->get('mysql_master')->pop();
         $couuntRes = yield $asyncMysql->execute($baseSql, true);
         if($couuntRes['code']==0) {
-            $this->_count = $couuntRes['data']['num'];
+            $this->_count = $couuntRes['data']['total'] ?? 0;
             if($this->_offset >= $this->_count) {
                 $items = [];
             }else{
                 //查询
-                $listSql = $baseSql . " LIMIT {$this->_offset},{$this->_limitRows} ";
+                $listSql = $sqlArr['sql'] . " LIMIT {$this->_offset},{$this->_limitRows} ";
                 $listRes = yield $asyncMysql->execute($listSql, false);
                 if($listRes['code']==0) {
                     $items = $listRes['data'];
@@ -180,7 +180,7 @@ class AsyncMysql extends Adapter {
      * @return boolean
      */
     public function haveToPaginate() {
-        $this->getPaginate();
+        yield $this->getPaginate();
         return !is_null($this->paginateResult) && $this->paginateResult->total_pages > 1;
     }
 
