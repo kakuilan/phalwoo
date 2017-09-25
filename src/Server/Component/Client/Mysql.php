@@ -60,6 +60,13 @@ class Mysql {
      */
     private $open_log = false;
 
+
+    /**
+     * 慢查询,毫秒
+     * @var int
+     */
+    private $slow_query = 20;
+
     /**
      * 是否已经关闭连接
      * @var bool
@@ -83,7 +90,9 @@ class Mysql {
         $this->conf   = $config;
         $this->mode     = $mode;
         $this->open_log = $config['open_log'] ?? false;
+        $this->slow_query = $config['slow_query'] ?? 20;
     }
+
 
     /**
      * 设置所属的连接池
@@ -92,6 +101,7 @@ class Mysql {
     public function addPool($pool) {
         $this->pool = $pool;
     }
+
 
     /**
      * 建立数据库连接
@@ -211,7 +221,11 @@ class Mysql {
                     } else {
                         if($this->open_log) {
                             $time = CommonHelper::getMillisecond() - $time;
-                            SwooleServer::getLogger()->info("ASYNC MySQL execute time", [$time, $sql]);
+                            if($time > $this->slow_query) {
+                                SwooleServer::getLogger()->info("ASYNC MySQL execute time[slow_query]", [$time, $sql]);
+                            }else{
+                                SwooleServer::getLogger()->info("ASYNC MySQL execute time", [$time, $sql]);
+                            }
                         }
                         if($result === true) {
                             $promise->resolve([
@@ -229,6 +243,7 @@ class Mysql {
                 });
                 break;
             }
+
             case ServerConst::MODE_SYNC : {
                 $time = CommonHelper::getMillisecond();
                 $result = $this->link->query($sql);
@@ -247,7 +262,11 @@ class Mysql {
                 } else {
                     if($this->open_log) {
                         $time = CommonHelper::getMillisecond() - $time;
-                        SwooleServer::getLogger()->info("ASYNC MySQL execute time", [$time, $sql]);
+                        if($time > $this->slow_query) {
+                            SwooleServer::getLogger()->info("SYNC MySQL execute time[slow_query]", [$time, $sql]);
+                        }else{
+                            SwooleServer::getLogger()->info("SYNC MySQL execute time", [$time, $sql]);
+                        }
                     }
                     if($result === true) {
                         $promise->resolve([

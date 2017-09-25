@@ -130,15 +130,19 @@ return [
         'mysql_master' => [
             'type'  => 'mysql',                 // 连接池类型
             'size'  => 40,                       // 连接池大小
+            'table_prefix'  => '',          //表前缀
+            'charset'   => 'utf8',              //字符集
 
             'args'  => [                        // 连接参数
                 'host'      => '127.0.0.1',     // 主机名
                 'port'      => 3306,            // 端口号
                 'user'      => 'root',          // 用户名
-                'password'  => 'root',        // 密码
+                'password'  => 'root',          // 密码
                 'database'  => 'test',          // 数据库名称
                 'open_log'  => true,
+                'slow_query' => 20, //慢查询20毫秒
             ]
+
         ],
 
         /**
