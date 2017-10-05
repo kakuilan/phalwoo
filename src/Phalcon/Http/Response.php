@@ -67,6 +67,7 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
      * @access protected
      */
     protected $_file;
+    protected $_basePath;
 
     /**
      * Dependency Injector
@@ -332,6 +333,7 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
     public function sendHeaders() {
         $headers = $this->_headers;
         if (is_object($headers)) {
+            $headers->setDI($this->getDI());
             $headers->send();
         }
 
@@ -355,6 +357,23 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
 
         return $this;
     }
+
+
+    /**
+     * 发送文件
+     */
+    public function sendFile() {
+        if($this->_file) {
+            $swooleResponse = $this->getSwooleResponse();
+            $mime = FileHelper::getFileMime($this->_file, true);
+            $swooleResponse->header('Content-Description', 'File Transfer');
+            $swooleResponse->header('Content-Type', $mime);
+            $swooleResponse->header('Content-Disposition', 'attachment; filename=' . $this->_basePath);
+            $swooleResponse->header('Content-Transfer-Encoding', 'binary');
+            $swooleResponse->sendfile($this->_file);
+        }
+    }
+
 
     /**
      * Prints out HTTP response to the client
@@ -398,18 +417,10 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
             $basePath = $attachmentName;
         }
 
-        /* Execute */
         if ($attachment && file_exists($filePath)) {
-            $swooleResponse = $this->getSwooleResponse();
-            $mime = FileHelper::getFileMime($filePath, true);
-            $swooleResponse->header('Content-Description', 'File Transfer');
-            $swooleResponse->header('Content-Type', $mime);
-            $swooleResponse->header('Content-Disposition', 'attachment; filename=' . $basePath);
-            $swooleResponse->header('Content-Transfer-Encoding', 'binary');
-            $swooleResponse->sendfile($filePath);
+            $this->_file = $filePath;
+            $this->_basePath = $basePath;
         }
-
-        $this->_file = $filePath;
 
         return $this;
     }
@@ -420,7 +431,7 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
      * @return bool
      */
     public function hasFile() {
-        return empty($this->_file);
+        return !empty($this->_file);
     }
 
 

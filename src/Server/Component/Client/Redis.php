@@ -15,6 +15,7 @@ use Lkk\Phalwoo\Server\ServerConst;
 use Lkk\Phalwoo\Server\Component\Pool\Adapter as PoolAdapter;
 use Lkk\Phalwoo\Server\Concurrent\Promise;
 
+
 class Redis {
 
     /**
@@ -133,23 +134,26 @@ class Redis {
                     function (\swoole_redis $client, $result) use($timeId,$promise){
                         \swoole_timer_clear($timeId);
                         if( $result === false ) {
-                            SwooleServer::getLogger()->error("ASYNC Redis Connect Failed {$this->id}");
-                            $promise->resolve([
+                            $proRes = [
                                 'code'      => ServerConst::ERR_REDIS_CONNECT_FAILED,
                                 'errCode'   => $client->errCode,
                                 'errMsg'    => $client->errMsg,
-                            ]);
+                            ];
+                            SwooleServer::getLogger()->error("ASYNC Redis Connect Failed {$this->id}", $proRes);
+                            $promise->resolve($proRes);
                             return;
                         }
                         if( isset($this->conf['auth']) && !empty($this->conf['auth']) ) {
                             $client->auth($this->conf['auth'], function(\swoole_redis $client, $result) use ($promise){
                                 if( $result === false ) {
                                     $this->close();
-                                    $promise->resolve([
+                                    $proRes = [
                                         'code'  => ServerConst::ERR_REDIS_ERROR,
                                         'errCode'   => $client->errCode,
                                         'errMsg'    => $client->errMsg,
-                                    ]);
+                                    ];
+                                    SwooleServer::getLogger()->error("ASYNC Redis Auth Failed {$this->id}", $proRes);
+                                    $promise->resolve($proRes);
                                     return;
                                 }
                                 $client->select($this->conf['select'], function(\swoole_redis $client, $result){});
@@ -217,7 +221,7 @@ class Redis {
             return $promise;
         }
 
-        echo " redis _call mode:$this->mode \r\n";
+        //echo " redis _call mode:$this->mode \r\n";
 
         switch ($this->mode) {
             case ServerConst::MODE_ASYNC : {
@@ -237,20 +241,26 @@ class Redis {
                             array_push($newArgs, $this->conf['prefix'] . $argument);
                         }
                         $arguments = array_merge($arguments, $newArgs);
-                    }elseif (isset($arguments[0]) && !is_numeric($arguments[0]) && is_string($arguments[0])) {
-                        $arguments[0] = $this->conf['prefix'] . $arguments[0];
+                    }elseif (isset($arguments[0])) {
+                        $exclude = ['eval','evalSha','script']; //排除的命令
+                        if(!is_numeric($arguments[0]) && is_string($arguments[0]) && !in_array($name, $exclude)) {
+                            $arguments[0] = $this->conf['prefix'] . $arguments[0];
+                        }
                     }
                 }
 
                 $index = count($arguments);
-                $arguments[$index] = function (\swoole_redis $client, $result) use ($timeId, $promise){
+                $arguments[$index] = function (\swoole_redis $client, $result) use ($timeId, $promise, $arguments){
                     \swoole_timer_clear($timeId);
                     if( $result === false ) {
-                        $promise->resolve([
+                        $proRes = [
                             'code'      => ServerConst::ERR_REDIS_ERROR,
                             'errCode'   => $client->errCode,
                             'errMsg'    => $client->errMsg,
-                        ]);
+                            'arguments' => $arguments,
+                        ];
+                        SwooleServer::getLogger()->error("ASYNC Redis Call Failed {$this->id}", $proRes);
+                        $promise->resolve($proRes);
                         return;
                     }
                     $promise->resolve([

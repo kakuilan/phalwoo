@@ -20,6 +20,7 @@ use Phalcon\Di\FactoryDefault\Cli as CliDi;
 use Phalcon\Events\Manager as PhEventManager;
 use Lkk\Phalwoo\Server\Component\Pool\PoolManager;
 use Lkk\Phalwoo\Server\Component\Pool\Adapter as PoolAdapter;
+use Lkk\Phalwoo\Server\Component\Client\Table;
 
 class SwooleServer extends LkkService {
 
@@ -28,8 +29,10 @@ class SwooleServer extends LkkService {
     protected $server; //swoole_server对象
     protected $serverDi; //服务器的DI容器
 
-    protected $inerqueue; //内部队列,非持久化工作
-    protected $rediqueue; //redis持久化队列
+    protected $inerQueue; //内部工作流队列,非持久化
+    protected $sessQueue; //内部session队列,非持久化
+    protected $rediQueue; //redis持久化队列
+    protected $shareTable; //共享内存表
 
     protected $servName; //服务名
     protected $listenIP; //监听IP
@@ -208,7 +211,7 @@ class SwooleServer extends LkkService {
      * 设置内置队列对象
      */
     protected function setInerQueue() {
-        $this->inerqueue = new \Swoole\Channel(256 * 1024 * 1024);
+        $this->inerQueue = new \Swoole\Channel(256 * 1024 * 1024);
     }
 
 
@@ -217,7 +220,24 @@ class SwooleServer extends LkkService {
      * @return mixed
      */
     final public static function getInerQueue() {
-        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->inerqueue;
+        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->inerQueue;
+    }
+
+
+    /**
+     * 设置session队列对象
+     */
+    protected function setSessionQueue() {
+        $this->sessQueue = new \Swoole\Channel(256 * 1024 * 1024);
+    }
+
+
+    /**
+     * 获取session队列对象
+     * @return mixed
+     */
+    final public static function getSessionQueue() {
+        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->sessQueue;
     }
 
 
@@ -226,7 +246,7 @@ class SwooleServer extends LkkService {
      */
     protected function setRediQueue() {
         //默认使用工作流队列,子类可自行更改
-        $this->rediqueue = RedisQueue::getQueueObject(RedisQueue::APP_WORKFLOW_QUEUE_NAME, []);
+        $this->rediQueue = RedisQueue::getQueueObject(RedisQueue::APP_WORKFLOW_QUEUE_NAME, []);
     }
 
 
@@ -235,9 +255,22 @@ class SwooleServer extends LkkService {
      * @return mixed
      */
     final public static function getRediQueue() {
-        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->rediqueue;
+        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->rediQueue;
     }
 
+
+    protected function setShareTable() {
+        $this->shareTable = new Table(128, 10240);
+    }
+
+
+    /**
+     * 获取ShareTable对象
+     * @return mixed
+     */
+    final public static function getShareTable() {
+        return (is_null(self::$instance) || !is_object(self::$instance)) ? null : self::$instance->shareTable;
+    }
 
 
     /**
@@ -324,6 +357,16 @@ class SwooleServer extends LkkService {
 
 
     /**
+     * 获取PID文件路径
+     * @return mixed
+     */
+    public static function getPidFile() {
+        return self::$pidFile;
+    }
+
+
+
+    /**
      * 设置进程标题
      * @param $title
      */
@@ -384,7 +427,7 @@ class SwooleServer extends LkkService {
      * 设置WORKER进程PID
      * @param $workerPid
      */
-    public static function setWorketPid($workerPid) {
+    public static function setWorkerPid($workerPid) {
         file_put_contents(self::$pidFile, ',' . $workerPid, FILE_APPEND);
     }
 
@@ -451,7 +494,7 @@ class SwooleServer extends LkkService {
 
         $binded  = ValidateHelper::isPortBinded('127.0.0.1', $this->listenPort);
         $msg = '';
-        $timeout = 10;
+        $timeout = 20;
         switch (self::$cliOperate) {
             case 'status' : //查看服务状态
                 if($masterIsAlive) {
@@ -491,8 +534,19 @@ class SwooleServer extends LkkService {
 
                 @unlink(self::$pidFile);
                 echo("Service $this->servName is stoping ...\r\n");
-                $masterPid && posix_kill($masterPid, SIGTERM);
+
+                //留几秒给服务器停止内部事情
                 $startTime = time();
+                while (1) {
+                    if (time() - $startTime > ($timeout/2)) {
+                        break;
+                    }
+                    echo "... ";
+                    sleep(1);
+                    continue;
+                }
+
+                $masterPid && posix_kill($masterPid, SIGTERM);
                 while (1) {
                     $masterIsAlive = $masterPid && posix_kill($masterPid, 0);
                     if ($masterIsAlive) {
@@ -513,8 +567,19 @@ class SwooleServer extends LkkService {
             case 'restart' :
                 @unlink(self::$pidFile);
                 echo("Service $this->servName is stoping ...\r\n");
-                $masterPid && posix_kill($masterPid, SIGTERM);
+
+                //留几秒给服务器停止内部事情
                 $startTime = time();
+                while (1) {
+                    if (time() - $startTime > ($timeout/2)) {
+                        break;
+                    }
+                    echo "... ";
+                    sleep(1);
+                    continue;
+                }
+
+                $masterPid && posix_kill($masterPid, SIGTERM);
                 while (1) {
                     $masterIsAlive = $masterPid && posix_kill($masterPid, 0);
                     if ($masterIsAlive) {
@@ -542,6 +607,18 @@ class SwooleServer extends LkkService {
                 break;
             case 'kill' :
                 @unlink(self::$pidFile);
+
+                //留几秒给服务器停止内部事情
+                $startTime = time();
+                while (1) {
+                    if (time() - $startTime > ($timeout/2)) {
+                        break;
+                    }
+                    echo "... ";
+                    sleep(1);
+                    continue;
+                }
+
                 $bash = "ps -ef|grep {$this->servName}|grep -v grep|cut -c 9-15|xargs kill -9";
                 exec($bash);
                 break;
@@ -562,7 +639,9 @@ class SwooleServer extends LkkService {
      */
     public function initServer() {
         $this->setInerQueue();
+        $this->setSessionQueue();
         $this->setRediQueue();
+        $this->setShareTable();
         $this->setServerDi();
         $this->setTimerTaskManager();
         $this->setLogger();
@@ -766,21 +845,23 @@ class SwooleServer extends LkkService {
     public static function onSwooleWorkerStart($serv, $workerId) {
         $servName = self::getProperty('servName');
         self::setProcessTitle($servName.'-Worker');
-        self::setWorketPid($serv->worker_pid);
-
-        //最后一个worker处理启动定时器
-        $conf = self::getProperty('conf');
-        if ($workerId == $conf['server_conf']['worker_num'] - 1) {
-            //启动定时器任务
-            echo "timerTaskManager\r\n";
-
-            $timerManager = self::getTimerTaskManager();
-            $timerManager->stopTimerTasks();
-            $timerManager->startTimerTasks();
-        }
+        self::setWorkerPid($serv->worker_pid);
 
         self::instance()->eventFire(__FUNCTION__);
         echo "Worker Start:[{$workerId}]...\r\n";
+
+        //最后一个worker处理启动定时器
+        $conf = self::getProperty('conf');
+        if ($workerId == $conf['server_conf']['worker_num'] -1) {
+            //启动定时器任务
+            $timerManager = self::getTimerTaskManager();
+            $timerManager->setWorkerPid($serv->worker_pid);
+            $timerManager->stopTimerTasks();
+            $timerManager->startTimerTasks();
+
+            $shareTable = SwooleServer::getShareTable();
+            $shareTable->setSubItem('server', ['timerWorkerPid'=>$serv->worker_pid]);
+        }
 
     }
 
@@ -794,6 +875,13 @@ class SwooleServer extends LkkService {
         self::instance()->eventFire(__FUNCTION__);
         echo "Worker Stop:[{$workerId}]...\r\n";
 
+        //停止定时器
+        $conf = self::getProperty('conf');
+        if ($workerId == $conf['server_conf']['worker_num'] -1) {
+            $timerManager = self::getTimerTaskManager();
+            $timerManager->stopTimerTasks();
+        }
+
     }
 
 
@@ -806,7 +894,8 @@ class SwooleServer extends LkkService {
      */
     public static function onSwooleConnect($serv, $fd, $fromId) {
         self::instance()->eventFire(__FUNCTION__);
-        echo "new Connect:[{$fromId}]...\r\n";
+        $workId = $serv->worker_id;
+        echo "new Connect: fromId[{$fromId}] workId[{$workId}]...\r\n";
 
     }
 
@@ -851,7 +940,7 @@ class SwooleServer extends LkkService {
      */
     public static function onSwooleClose($serv, $fd, $fromId) {
         self::instance()->eventFire(__FUNCTION__);
-        echo "on Close:[{$fromId}]...\r\n";
+        echo "on Close: fromId[{$fromId}]...\r\n";
 
     }
 
@@ -928,9 +1017,8 @@ class SwooleServer extends LkkService {
      */
     public static function onSwooleWorkerError($serv, $workerId, $workerPid, $exitCode) {
         self::instance()->eventFire(__FUNCTION__);
-        echo "on WorkerError...\r\n";
-        echo "workerId[$workerId] workerPid[$workerPid] exitCode[$exitCode]\r\n";
-        die;
+        echo "on WorkerError...\r\nworkerId[$workerId] workerPid[$workerPid] exitCode[$exitCode]\r\n";
+
     }
 
 
@@ -979,6 +1067,18 @@ class SwooleServer extends LkkService {
 
         return $res;
     }
+
+
+    /**
+     * 记录异常日志
+     * @param $e \Exception
+     */
+    public static function logException($e) {
+        $loger = self::getLogger();
+        $msg = $e->getMessage() . ' ##code:' . $e->getCode() . ' ##file:' . $e->getFile() . ' ##line:' . $e->getLine();
+        $loger->error($msg, $e->getTrace());
+    }
+
 
 
 

@@ -11,17 +11,23 @@
 namespace Lkk\Phalwoo\Server;
 
 use Lkk\LkkService;
+use Lkk\Phalwoo\Server\SwooleServer;
 use Lkk\Helpers\CommonHelper;
 use Lkk\Helpers\ValidateHelper;
 use Cron\CronExpression;
 
 class TimerTaskManager extends LkkService {
 
+    private static $key = 'siteTimerId';
+
     //定时任务
     public $timerTasks = [];
 
     //初始定时器ID
     protected $timerId = 0;
+
+    //定时器worker进程的pid
+    protected $workerPid = 0;
 
 
     //crontab规则对象
@@ -41,11 +47,38 @@ class TimerTaskManager extends LkkService {
     }
 
 
+    public function setWorkerPid(int $pid) {
+        $this->workerPid = $pid;
+    }
+
+
+    public function getWorkerPid() {
+        return $this->workerPid;
+    }
+
+
+    /**
+     * 设置TimerId
+     * @param int $timerId
+     */
+    public function setTimerId(int $timerId) {
+        $this->timerId = $timerId;
+
+        $shareTable = SwooleServer::getShareTable();
+        $shareTable->setSubItem('server', ['timerId'=>$timerId]);
+    }
+
+
     /**
      * 获取管理的定时器ID
      * @return int
      */
     public function getTimerId() {
+        if(!$this->timerId) {
+            $shareTable = SwooleServer::getShareTable();
+            $this->timerId = intval($shareTable->get('server', 'timerId'));
+        }
+
         return $this->timerId;
     }
 
@@ -188,17 +221,29 @@ class TimerTaskManager extends LkkService {
      * 开始定时任务
      */
     public function startTimerTasks() {
-        echo "startTimerTasks \r\n";
-
         //定时器/秒
         $this->deliveryTimerTask();
-        if($this->timerId) swoole_timer_clear($this->timerId);
+        $timerId = $this->getTimerId();
+        if($timerId) {
+            $shareTable = SwooleServer::getShareTable();
+            $workerPid = intval($shareTable->get('server', 'timerWorkerPid'));
+            //worker重启后pid不一样
+            if($workerPid && $workerPid==$this->workerPid) {
+                swoole_timer_clear($timerId);
+            }
+        }
 
-        $this->timerId = swoole_timer_tick(100, function () {
-            $time = CommonHelper::getMillisecond();
+        $timerId = swoole_timer_tick(100, function () {
+            //$time = CommonHelper::getMillisecond();
             //echo "swoole_timer_tick [{$time}]\r\n";
             $this->deliveryTimerTask();
         });
+
+        $this->setTimerId($timerId);
+
+        echo "start timerId [$timerId]\r\n";
+
+        return $timerId;
     }
 
 
@@ -208,8 +253,15 @@ class TimerTaskManager extends LkkService {
      */
     public function stopTimerTasks() {
         $res = false;
-        if($this->timerId) {
-            $res = swoole_timer_clear($this->timerId);
+        $timerId = $this->getTimerId();
+        echo "stop timerId [$timerId]\r\n";
+        if($timerId) {
+            $shareTable = SwooleServer::getShareTable();
+            $workerPid = intval($shareTable->get('server', 'timerWorkerPid'));
+            //worker重启后pid不一样
+            if($workerPid && $workerPid==$this->workerPid) {
+                swoole_timer_clear($timerId);
+            }
         }
 
         return $res;

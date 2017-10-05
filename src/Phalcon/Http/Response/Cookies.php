@@ -24,6 +24,30 @@ class Cookies extends PhalconCookies implements CookiesInterface, InjectionAware
 
     use HttpTrait;
 
+    protected $conf;
+
+
+    /**
+     * 设置配置
+     * @param array $conf
+     */
+    public function setConf(array $conf) {
+        $this->conf = $conf;
+    }
+
+
+    /**
+     * 获取带前缀的cookie名称
+     * @param string $name
+     *
+     * @return string
+     */
+    public function getPrefixedName(string $name) {
+        $prefixedName = ($this->conf['prefix'] ?? '') .$name;
+        return $prefixedName;
+    }
+
+
 
     /**
      * Sets a cookie to be sent at the end of the request
@@ -46,6 +70,11 @@ class Cookies extends PhalconCookies implements CookiesInterface, InjectionAware
         }else{
             $encryption = $encrypt;
         }
+
+        $name = $this->getPrefixedName($name);
+        if(empty($path)) $path = $this->conf['path'];
+        if(empty($domain)) $domain = $this->conf['domain'];
+        if(empty($expire)) $expire = $this->conf['lifetime'];
 
         /** @var CookieInterface $cookie */
         $cookie = isset($this->_cookies[$name]) ? $this->_cookies[$name] : null;
@@ -95,6 +124,8 @@ class Cookies extends PhalconCookies implements CookiesInterface, InjectionAware
      * @return \Phalcon\Http\CookieInterface
      */
     public function get($name, $encrypt=null) {
+        $name = $this->getPrefixedName($name);
+
         $cookie = $this->_cookies[$name] ?? null;
         if(!empty($cookie) && $cookie instanceof Cookie ) {
             return $cookie;
@@ -139,6 +170,8 @@ class Cookies extends PhalconCookies implements CookiesInterface, InjectionAware
      * @return bool
      */
     public function has($name) {
+        $name = $this->getPrefixedName($name);
+
         if (isset($this->_cookies[$name])) {
             return true;
         }

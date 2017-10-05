@@ -88,5 +88,17 @@ class PoolManager extends LkkService {
     }
 
 
+    /**
+     * 是否有某个连接池
+     * @param $name
+     *
+     * @return bool
+     */
+    public function has($name) {
+        return isset($this->pools[$name]);
+    }
+
+
+
 
 }

@@ -14,20 +14,38 @@ use Lkk\LkkService;
 
 class WorkFlow extends LkkService {
 
-    private $isDoing = false;
+    //默认工作标识
+    public static $defaultKey = 'default';
+
+    protected $isDoings = [];
 
     public function __construct(array $vars = []) {
         parent::__construct($vars);
     }
 
 
-    public function setDoing(bool $status) {
-        $this->isDoing = $status;
+    /**
+     * 设置某项工作正执行
+     * @param bool   $status 状态
+     * @param string $key 工作标识
+     */
+    public function setDoing(bool $status, string $key='') {
+        if(empty($key)) $key = self::$defaultKey;
+
+        $this->isDoings[$key] = $status;
     }
 
 
-    public function chkDoing() {
-        return $this->isDoing;
+    /**
+     * 检查某项工作是否正执行
+     * @param string $key 工作标识
+     *
+     * @return mixed
+     */
+    public function chkDoing(string $key='') {
+        if(empty($key)) $key = self::$defaultKey;
+
+        return $this->isDoings[$key] ?? false;
     }
 
 

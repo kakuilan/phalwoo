@@ -33,6 +33,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
 
     protected $maxFileSize = 0;
     protected $maxRecords = 0;
+    protected $writeBlocks = 50; //每次写入多少条
     protected $recordPools = []; //日志消息池,待转入recordBuffers
     protected $recordBuffers = []; //日志消息,待写入文件
     protected $logDir;
@@ -174,25 +175,28 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
         $writeable = !$all || !$this->isWriting || mt_rand(0, 3)==1;
         if(!$writeable) return false;
 
-        $str = implode('', array_splice($this->recordBuffers, 0));
-        if($all) {
-            $str .= implode('', array_splice($this->recordPools, 0));
-        }
-
-        //echo $str;die;
-
-        $logger = $this;
-        $logger->setIsWriting(true);
-        swoole_async_writefile($this->url, $str, function($filename) use($logger) {
-            $logger->setIsWriting(false);
-            //echo "logger write done.\r\n";
-
-            //TODO 这里日志切割有问题,放到定时器里面切割?
-            if(file_exists($filename) && filesize($filename) >= $logger->maxFileSize){
-                $backupFile = $logger->logDir . '/' . basename($filename) . date('.YmdHis.') .'bak';
-                rename($filename, $backupFile);
+        while (true) {
+            $str = implode('', array_splice($this->recordBuffers, 0, $this->writeBlocks));
+            if($all) {
+                $str .= implode('', array_splice($this->recordPools, 0, $this->writeBlocks));
             }
-        }, FILE_APPEND);
+
+            if(trim($str)=='') break;
+
+            $logger = $this;
+            $logger->setIsWriting(true);
+            swoole_async_writefile($this->url, $str, function($filename) use($logger) {
+                $logger->setIsWriting(false);
+                //echo "logger write done.\r\n";
+
+                //TODO 这里日志切割有问题,放到定时器里面切割?
+                if(file_exists($filename) && filesize($filename) >= $logger->maxFileSize){
+                    $backupFile = $logger->logDir . '/' . basename($filename) . date('.YmdHis.') .'bak';
+                    rename($filename, $backupFile);
+                }
+            }, FILE_APPEND);
+
+        }
 
         return true;
     }

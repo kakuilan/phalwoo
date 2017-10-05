@@ -4,7 +4,7 @@
  * User: kakuilan@163.com
  * Date: 2017/8/24
  * Time: 23:01
- * Desc: -
+ * Desc: -session的异步redis适配器类,可以读取,但写的时候放入队列给定时器延迟写入[注意使用yield]
  */
 
 
@@ -17,14 +17,23 @@ use Phalcon\Events\Manager;
 use Lkk\Phalwoo\Phalcon\Session\Adapter;
 use Lkk\Phalwoo\Server\DenyUserAgent;
 use Lkk\Phalwoo\Server\SwooleServer;
+use Lkk\Helpers\CommonHelper;
+use Lkk\Phalwoo\Server\ServerConst;
 
 class Redis extends Adapter {
 
     const CACHE_PREFIX  = '_PHCR';
+    const BEGIN_KEY     = '_BEGN'; //保存[初次session访问时间]的键
+    const LASTT_KEY     = '_LAST'; //保存[最后session访问时间]的键
     const STATI_KEY     = '_PSVT'; //保存[统计session访问次数]的键
 
-    protected $_redis = null;
-    private $_domain = '';
+    /**
+     * redis连接池名称
+     * @var string
+     */
+    protected $_redis = 'redis_session';
+
+    private $_domain = ''; //cookie域名
     private $_lefttime = 0; //剩余时间ttl,秒
     private $_sessionData = []; //session数据
     private $_writable = false; //是否允许将session写入redis
@@ -38,22 +47,19 @@ class Redis extends Adapter {
         if (isset($options['cookie']['domain'])) {
             $this->setDomain($options['cookie']['domain']);
         }
+        if (isset($options['redis']) && !empty($options['redis'])) {
+            $this->_redis = $options['redis'];
+        }
 
-        $this->getRedis();
     }
 
 
     /**
-     * 获取redis客户端
-     * @return null|\Redis
+     * 获取异步redis连接
+     * @return mixed
      */
-    public function getRedis() {
-        if(is_null($this->_redis)) {
-            $redis = new \Redis();
-            $this->_redis = $redis;
-        }
-
-        return $this->_redis;
+    public function getAsyncRedis() {
+        return SwooleServer::getPoolManager()->get($this->_redis)->pop();
     }
 
 
@@ -81,7 +87,7 @@ class Redis extends Adapter {
      */
     public function setDomain($domain) {
         if(is_string($domain) && $domain) {
-            $this->_domain = $domain;
+            $this->_domain = CommonHelper::getDomain($domain, true);
         }
     }
 
@@ -111,30 +117,8 @@ class Redis extends Adapter {
      * @return bool
      */
     public function open() {
-        $option = $this->getOptions();
-        //TODO 使用连接池
-        //Warning: Redis::connect(): connect() failed: Cannot assign requested address
-        $res = $this->_redis->connect($option['host'], $option['port'], 2.5);
-        if(!$res) return false;
-        if(isset($option['auth']) && !empty($option['auth'])) {
-            $this->_redis->auth($option['auth']);
-        }
-
-        $this->_redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_PHP);
-        $this->_redis->select($option['index'] ?? 1);
-
-        return true;
+        return SwooleServer::getPoolManager()->has($this->_redis);
     }
-
-
-    /**
-     *  关闭redis连接
-     * @return mixed
-     */
-    public function close() {
-        return $this->_redis->close();
-    }
-
 
 
     /**
@@ -149,8 +133,6 @@ class Redis extends Adapter {
         if ($this->_started) {
             return true;
         }
-
-        //TODO 检查是否客户端是否可接收cookie
 
         $this->_started = $this->open();
         if(!$this->_started) {
@@ -168,18 +150,19 @@ class Redis extends Adapter {
                 $this->_id = $cookie->getValue();
             } else {
                 $isNew = true;
-                $this->regenerateId();
+                yield $this->regenerateId();
                 $this->setSessionIdCookie();
                 $this->_sessionData[self::STATI_KEY] = 1;
             }
         }
 
         if(!$isNew) {
-            $data = $this->read($this->_id);
-            if($data) {
-                $this->_sessionData = $data;
-
-                $ttl = $this->_redis->ttl($this->getIdKey($this->_id));
+            $res = yield $this->read($this->_id);
+            if($res['code']==ServerConst::ERR_SUCCESS) {
+                $data = unserialize($res['data']);
+                $this->_sessionData = $data ? $data : [];
+                $ttlRes = yield $this->getAsyncRedis()->ttl($this->getIdKey($this->_id));
+                $ttl = intval($ttlRes['data']);
                 if($ttl!= -2) $this->_lefttime = $ttl;
             }else{
                 $this->setSessionIdCookie();
@@ -187,8 +170,12 @@ class Redis extends Adapter {
         }
 
         //访问次数统计
-        if(!isset($this->_sessionData[self::STATI_KEY])) $this->_sessionData[self::STATI_KEY] = 0;
-        $this->set(self::STATI_KEY, ++$this->_sessionData[self::STATI_KEY]);
+        $begin = $this->get(self::BEGIN_KEY, 0);
+        $stati = $this->get(self::STATI_KEY, 0);
+
+        if(!$begin) $this->set(self::BEGIN_KEY, time());
+        $this->set(self::STATI_KEY, ++$stati);
+        $this->set(self::LASTT_KEY, time());
 
         /** @var Manager $eventManager */
         $eventManager = $this->_dependencyInjector->getShared('eventsManager');
@@ -202,7 +189,7 @@ class Redis extends Adapter {
 
 
     /**
-     * 读取redis里的数据
+     * 异步读取redis里的数据
      * @param string $sessionId
      *
      * @return bool|mixed
@@ -211,13 +198,14 @@ class Redis extends Adapter {
         $sessionId || $sessionId = $this->getId();
         if(empty($sessionId)) return false;
 
-        $res = $this->_redis->get($this->getIdKey($sessionId));
+        $res = yield $this->getAsyncRedis()->get($this->getIdKey($sessionId));
+        if($res && is_string($res)) $res = unserialize($res);
         return $res;
     }
 
 
     /**
-     * 将数据写入redis
+     * 异步将数据写入redis
      * @param $sessionId
      * @param $data
      *
@@ -228,13 +216,18 @@ class Redis extends Adapter {
         if(empty($sessionId)) return false;
 
         if(empty($data)) {
-            $res = $this->_redis->del($this->getIdKey($sessionId));
+            $res = yield $this->getAsyncRedis()->del($this->getIdKey($sessionId));
         }elseif($this->_lefttime ==0) { //第一次,初始为60s,防止非浏览器压测
-            $res = $this->_redis->setex($this->getIdKey($sessionId), 60, $data);
-        }elseif($this->_lefttime >0 && $this->_lefttime <=120) { //第二次更新为正常
-            $res = $this->_redis->setex($this->getIdKey($sessionId), Adapter::SESSION_LIFETIME, $data);
+            $res = yield $this->getAsyncRedis()->setex($this->getIdKey($sessionId), 60, serialize($data));
         }else{
-            $res = $this->_redis->setex($this->getIdKey($sessionId), $this->_lifetime, $data);
+            if($this->_lefttime < 120) {
+                //lefttime计算:第1次,先给5分钟;5分钟内超过10次的,给10分钟;以此类推
+                $lefttime = (intval($this->_sessionData[self::STATI_KEY] /10) + 1) * 300;
+                if($lefttime> Adapter::SESSION_LIFETIME) $lefttime = Adapter::SESSION_LIFETIME;
+                $this->_lefttime = $lefttime;
+            }
+
+            $res = yield $this->getAsyncRedis()->setex($this->getIdKey($sessionId), $this->_lefttime, serialize($data));
         }
 
         return $res;
@@ -245,33 +238,29 @@ class Redis extends Adapter {
      * session写入缓存
      */
     public function saveToCache() {
-        /*$this->write($this->_id, $this->_sessionData);
-        $this->close();*/
-
-        $this->close();
-
         $writable = ($this->getWritable() && !empty($this->_sessionData) && ($this->isUpdate() || $this->_lefttime<=120) );
         if(!$writable) {
             return false;
         }
 
         //lefttime计算:第1次,先给5分钟;5分钟内超过10次的,给10分钟;以此类推
-        $lefttime = (intval($this->_sessionData[self::STATI_KEY] /10) + 1) * 300;
+        $stati = $this->get(self::STATI_KEY, 1);
+        $lefttime = (intval($stati /10) + 1) * 300;
         if($lefttime> Adapter::SESSION_LIFETIME) $lefttime = Adapter::SESSION_LIFETIME;
 
         $workData = [
-            'type' => 'session',
-            'data' => [
-                'key' => $this->getIdKey($this->_id),
-                'session' => $this->_sessionData,
-                'lefttime' => ($this->_lefttime>120 ? $this->_lefttime : $lefttime),
-            ]
+            'key' => $this->getIdKey($this->_id),
+            'session' => $this->_sessionData,
+            'lefttime' => ($this->_lefttime>120 ? $this->_lefttime : $lefttime),
         ];
-        $inerQueue = SwooleServer::getInerQueue();
-        $inerQueue->push($workData);
-        $state = $inerQueue->stats();
 
-        //echo "session queue len: {$state['queue_num']}\r\n";
+        //将session数据放入队列
+        $sessionQueue = SwooleServer::getSessionQueue();
+        $sessionQueue->push($workData);
+
+        $state = $sessionQueue->stats();
+        echo "session queue len: {$state['queue_num']}\r\n";
+
         return true;
     }
 
@@ -294,6 +283,30 @@ class Redis extends Adapter {
         }
 
         return $res;
+    }
+
+
+    /**
+     * 获取当前用户pv
+     * @return mixed
+     */
+    public function getPv() {
+        $stati = $this->get(self::STATI_KEY, 1);
+        return $stati;
+    }
+
+
+    /**
+     * 获取用户平均每秒访问次数
+     * @return float|int
+     */
+    public function getQps() {
+        $begin = $this->get(self::BEGIN_KEY, 0);
+        $lastt = $this->get(self::LASTT_KEY, 0);
+        $stati = $this->get(self::STATI_KEY, 1);
+        $useTime = $lastt - $begin;
+
+        return ($useTime>0) ? ceil($stati/$useTime) : 1;
     }
 
 
@@ -369,12 +382,9 @@ class Redis extends Adapter {
         $this->_started = false;
         if($removeData) {
             $workData = [
-                'type' => 'session',
-                'data' => [
-                    'key' => $this->getIdKey($this->_id),
-                    'session' => [],
-                    'lefttime' => 0,
-                ]
+                'key' => $this->getIdKey($this->_id),
+                'session' => [],
+                'lefttime' => 0,
             ];
             $inerQueue = SwooleServer::getInerQueue();
             $inerQueue->push($workData);
@@ -395,7 +405,7 @@ class Redis extends Adapter {
         }
 
         if ($deleteOldSession === true) {
-            $this->_redis->del($this->getIdKey());
+            yield $this->getAsyncRedis()->del($this->getIdKey());
         }
 
         $denAgent = $this->_dependencyInjector->getShared('denAgent');
@@ -444,27 +454,31 @@ class Redis extends Adapter {
 
 
     /**
-     * 获取系统在线人数
+     * 获取系统在线人数[同步模式]
      * @return int
      */
     public function getSystemOnlineNum() {
         $like = self::CACHE_PREFIX . $this->_prefix;
-        $count = $this->_redis->eval('return table.getn(redis.call("keys", "'.$like.'*"))');
-        return intval($count);
+        $cmd = 'return table.getn(redis.call("keys", "'.$like.'*"))';
+        $prom = SwooleServer::getPoolManager()->get('redis_system')->pop(true)->eval($cmd);
+        $promRes = $prom->getResult();
+        return intval($promRes['data']);
     }
 
 
     /**
-     * 获取站点在线人数
+     * 获取站点在线人数[同步模式]
      * @param string $siteDomain
      *
      * @return int
      */
     public function getSiteOnlineNum($siteDomain='') {
         if(empty($siteDomain)) $siteDomain = $this->getDomain();
-        $like = self::CACHE_PREFIX . $this->_prefix . $siteDomain . ':';
-        $count = $this->_redis->eval('return table.getn(redis.call("keys", "'.$like.'*"))');
-        return intval($count);
+        $like = self::CACHE_PREFIX . $this->_prefix . CommonHelper::getDomain($siteDomain, true) . ':';
+        $cmd = 'return table.getn(redis.call("keys", "'.$like.'*"))';
+        $prom = SwooleServer::getPoolManager()->get('redis_site')->pop(true)->eval($cmd);
+        $promRes = $prom->getResult();
+        return intval($promRes['data']);
     }
 
 

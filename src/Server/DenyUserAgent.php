@@ -65,6 +65,10 @@ class DenyUserAgent extends LkkService implements InjectionAwareInterface {
     }
 
 
+    /**
+     * 设置是否允许压测
+     * @param bool $status
+     */
     public function setAllowBench($status=false) {
         $this->allowBench = $status;
     }
@@ -125,18 +129,30 @@ class DenyUserAgent extends LkkService implements InjectionAwareInterface {
      * @return bool
      */
     public function checkCookie() {
-        if(!empty($this->request->cookie) && !isset($this->request->cookie[SessionAdapter::SESSION_NAME])) {
-            $this->setError('cookies没有sessionId');
-            return false;
-        }elseif (isset($this->request->cookie[SessionAdapter::SESSION_NAME])) {
-            $value = $this->request->cookie[SessionAdapter::SESSION_NAME];
-            $crypt = $this->_dependencyInjector->getShared('crypt');
-            $decryptedValue = $crypt->decryptBase64($value);
-            $uuid = $this->getAgentUuid();
-            if(substr($decryptedValue, 22) !==$uuid) {
-                $this->setError('cookies的sessionId错误');
-                return false;
+        if(isset($this->request->cookie)) {
+            $hasSessionId = false;
+            $sessionValue = null;
+            foreach ($this->request->cookie as $key=>$item) {
+                if(strpos($key, SessionAdapter::SESSION_NAME) !==false) {
+                    $hasSessionId = true;
+                    $sessionValue = $item;
+                    break;
+                }
             }
+
+            if(!$hasSessionId) {
+                $this->setError('cookies没有sessionId');
+                return false;
+            }else{
+                $crypt = $this->_dependencyInjector->getShared('crypt');
+                $decryptedValue = $crypt->decryptBase64($sessionValue);
+                $uuid = $this->getAgentUuid();
+                if(substr($decryptedValue, 22) !==$uuid) {
+                    $this->setError('cookies的sessionId错误');
+                    return false;
+                }
+            }
+
         }
 
         return true;

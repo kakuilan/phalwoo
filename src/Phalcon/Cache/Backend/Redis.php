@@ -15,6 +15,7 @@ use Phalcon\Cache\BackendInterface;
 use Lkk\Phalwoo\Phalcon\Cache\Backend;
 use Lkk\Phalwoo\Phalcon\Cache\Exception;
 use Lkk\Phalwoo\Server\SwooleServer;
+use Lkk\Phalwoo\Server\ServerConst;
 
 class Redis extends Backend {
 
@@ -90,14 +91,16 @@ class Redis extends Backend {
         $res = null;
 
         $prefixedkey = $this->_prefix . $this->getkey($keyName);
-        $ttl = intval(yield $this->getRedis()->ttl($prefixedkey));
+        $ttlRes = yield $this->getRedis()->ttl($prefixedkey);
+        $ttl = intval($ttlRes['data']);
         if($ttl==-2) return $res;
 
-        $cachedContent = yield $this->getRedis()->get($prefixedkey);
-        if ($cachedContent === false) {
+        $req = yield $this->getRedis()->get($prefixedkey);
+        if($req['code'] != ServerConst::ERR_SUCCESS) {
             return false;
         }
 
+        $cachedContent = $req['data'];
         if (is_numeric($cachedContent)) {
             return $cachedContent;
         } else {
@@ -162,7 +165,7 @@ class Redis extends Backend {
             $status = yield $this->getRedis()->setex($lastKey, $lifetime, $preparedContent);
         }
 
-        if(empty($status)) return false;
+        if($status['code']!=ServerConst::ERR_SUCCESS) return false;
 
         if ($stopBuffer === true) {
             $this->_frontend->stop();
@@ -190,7 +193,7 @@ class Redis extends Backend {
     public function delete($keyName) {
         $prefixedkey = $this->_prefix . $this->getkey($keyName);
         $res = yield $this->getRedis()->del($prefixedkey);
-        return boolval($res);
+        return boolval($res['code']==ServerConst::ERR_SUCCESS);
     }
 
 
@@ -210,7 +213,7 @@ class Redis extends Backend {
     public function queryKeys($prefix = null) {
         $search = "{$prefix}*";
         $res = yield $this->getRedis()->keys($search);
-        return $res ? $res : [];
+        return ($res['code']==ServerConst::ERR_SUCCESS) ? $res['data'] : [];
     }
 
 
@@ -224,7 +227,8 @@ class Redis extends Backend {
     public function exists($keyName = null, $lifetime = null) {
         $prefixedkey = $this->_prefix . $this->getkey($keyName);
 
-        $ttl = intval(yield $this->getRedis()->ttl($prefixedkey));
+        $ttlRes = yield $this->getRedis()->ttl($prefixedkey);
+        $ttl = intval($ttlRes['data']);
         return !($ttl==-2);
     }
 
@@ -239,8 +243,8 @@ class Redis extends Backend {
     public function increment($keyName = null, $value = 1) {
         $value = ($value>1) ? intval($value) : 1;
         $prefixedkey = $this->_prefix . $this->getkey($keyName);
-        $res = intval(yield $this->getRedis()->incrBy($prefixedkey, $value));
-        return $res;
+        $res = yield $this->getRedis()->incrBy($prefixedkey, $value);
+        return ($res['code']==ServerConst::ERR_SUCCESS) ? intval($res['data']) : 0;
     }
 
 
@@ -254,9 +258,10 @@ class Redis extends Backend {
     public function decrement($keyName = null, $value = 1) {
         $value = ($value>1) ? intval($value) : 1;
         $prefixedkey = $this->_prefix . $this->getkey($keyName);
-        $res = intval(yield $this->getRedis()->decrBy($prefixedkey, $value));
-        return $res;
+        $res = yield $this->getRedis()->decrBy($prefixedkey, $value);
+        return ($res['code']==ServerConst::ERR_SUCCESS) ? intval($res['data']) : 0;
     }
+
 
     /**
      * Immediately invalidates all existing items.
@@ -268,10 +273,10 @@ class Redis extends Backend {
         if($this->_prefix) {
             $keys = yield $this->queryKeys($this->_prefix);
             if($keys) {
-                $slices = array_slice($keys, 0, 5);
+                $slices = array_chunk($keys, 10);
                 foreach ($slices as $slice) {
-                    list($k1,$k2,$k3,$k4,$k5) = $slice;
-                    $res = yield $this->getRedis()->del($k1,$k2,$k3,$k4,$k5);
+                    $delRes = yield $this->getRedis()->delete($slice);
+                    $res = ($delRes['code']==ServerConst::ERR_SUCCESS);
                 }
             }
         }else{

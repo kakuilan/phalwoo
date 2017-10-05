@@ -203,6 +203,16 @@ class Promise {
         return $next;
     }
 
+
+    public function get(string $property) {
+        return isset($this->$property) ? $this->$property : null;
+    }
+
+    public function getResult() {
+        return $this->value;
+    }
+
+
     /*********** Static Function Begin ******************/
 
     /**

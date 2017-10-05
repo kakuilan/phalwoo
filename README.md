@@ -58,11 +58,10 @@ https://github.com/mkusher/reactphp-co
 cat-sys/cat-core  
 Hprose\Promise  
 Prophecy  
-将cookie里面写_PHCOOKIE_拆出来  
-
 
 -----------------------
-cron定时器基本格式 :
+cron定时器基本格式 :  
+``` bash
 *　　*　　*　　*　　*　　
 分　时　日　月　周　命令
 第1列表示分钟1～59 每分钟用*或者 */1表示
@@ -70,8 +69,9 @@ cron定时器基本格式 :
 第3列表示日期1～31
 第4列表示月份1～12
 第5列标识号星期0～6（0表示星期天）
+```  
 
-------------------
+------------------  
 abnormal exit, status=0, signal=11  
 signal=11 表示产生了 core dump，你需要使用 gdb 跟踪  
 
