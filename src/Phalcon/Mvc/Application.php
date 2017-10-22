@@ -214,7 +214,7 @@ class Application extends PhApp {
         /**
          * The dispatcher must return an object
          */
-        $controller = $dispatcher->dispatch();
+        $controller = yield $dispatcher->dispatch();
 
         /**
          * Get the latest value returned by an action

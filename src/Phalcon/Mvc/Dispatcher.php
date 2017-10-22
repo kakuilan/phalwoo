@@ -29,7 +29,7 @@ class Dispatcher extends PhDispatcher {
     public function dispatch() {
         $handler = $e = null;
         try {
-            $handler = $this->_dispatch();
+            yield $handler = $this->_dispatch();
         }catch (\Exception $e) {
             if($this->{"_handleException"}($e) === false) {
                 return false;
@@ -320,7 +320,7 @@ class Dispatcher extends PhDispatcher {
 
             try {
                 // We update the latest value produced by the latest handler
-                $this->_returnedValue = $this->callActionMethod($handler, $actionMethod, $params);
+                $this->_returnedValue = yield $this->callActionMethod($handler, $actionMethod, $params);
 			} catch (\Exception $e) {
                 if ($this->{"_handleException"}($e) === false) {
                     if ($this->_finished === false) {

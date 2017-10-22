@@ -118,44 +118,44 @@ class Router extends PhRouter {
                 }
 
                 $request = $dependencyInjector->getShared('request');
-            }
 
-            /**
-             * Check if the current hostname is the same as the route
-             */
-            if(is_null($currentHostName)) {
-                $currentHostName = $request->getHttpHost();
-            }
-
-            /**
-             * No HTTP_HOST, maybe in CLI mode?
-             */
-            if (!$currentHostName) {
-                continue;
-            }
-
-            /**
-             * Check if the hostname restriction is the same as the current in the route
-             */
-            if (strpos($hostname, '(') !== false) {
-                if (strpos($hostname, '#') === false) {
-                    $regexHostName = "#^" . $hostname;
-                    if (strpos($hostname, ':') === false) {
-                        $regexHostName .= "(:[[:digit:]]+)?";
-                    }
-                    $regexHostName .= "$#i";
-                }else{
-                    $regexHostName = $hostname;
+                /**
+                 * Check if the current hostname is the same as the route
+                 */
+                if(is_null($currentHostName)) {
+                    $currentHostName = $request->getHttpHost();
                 }
 
-                $matched = preg_match($regexHostName, $currentHostName);
-            }else{
-                $matched = $currentHostName == $hostname;
-            }
+                /**
+                 * No HTTP_HOST, maybe in CLI mode?
+                 */
+                if (!$currentHostName) {
+                    continue;
+                }
 
-            if (!$matched) {
-                continue;
-            }
+                /**
+                 * Check if the hostname restriction is the same as the current in the route
+                 */
+                if (strpos($hostname, '(') !== false) {
+                    if (strpos($hostname, '#') === false) {
+                        $regexHostName = "#^" . $hostname;
+                        if (strpos($hostname, ':') === false) {
+                            $regexHostName .= "(:[[:digit:]]+)?";
+                        }
+                        $regexHostName .= "$#i";
+                    }else{
+                        $regexHostName = $hostname;
+                    }
+
+                    $matched = preg_match($regexHostName, $currentHostName);
+                }else{
+                    $matched = $currentHostName == $hostname;
+                }
+
+                if (!$matched) {
+                    continue;
+                }
+            }//end if hostnae
 
 
             if(is_object($eventsManager)) {
