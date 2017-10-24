@@ -44,6 +44,9 @@ class Request implements RequestInterface, InjectionAwareInterface {
     private $_requestUuid = null;
 
 
+    private $_useMillisecond = 0; //内部处理时间,毫秒
+
+
     /**
      * Sets the dependency injector
      *
@@ -994,6 +997,22 @@ class Request implements RequestInterface, InjectionAwareInterface {
     }
 
 
+    /**
+     * 设置请求处理耗时,毫秒
+     * @param int $millisecond
+     */
+    public function setUseMillisecond(int $millisecond = 0) {
+        $this->_useMillisecond = $millisecond;
+    }
+
+
+    /**
+     * 获取请求处理耗时,毫秒
+     * @return int
+     */
+    public function getUseMillisecond() {
+        return $this->_useMillisecond;
+    }
 
 
 }
