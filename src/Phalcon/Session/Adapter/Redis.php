@@ -19,6 +19,7 @@ use Lkk\Phalwoo\Server\DenyUserAgent;
 use Lkk\Phalwoo\Server\SwooleServer;
 use Lkk\Helpers\CommonHelper;
 use Lkk\Phalwoo\Server\ServerConst;
+use Lkk\Phalwoo\Server\Component\Client\Redis as RedisClient;
 
 class Redis extends Adapter {
 
@@ -405,7 +406,10 @@ class Redis extends Adapter {
         }
 
         if ($deleteOldSession === true) {
-            yield $this->getAsyncRedis()->del($this->getIdKey());
+            $redis = $this->getAsyncRedis();
+            if(is_object($redis) && ($redis instanceof RedisClient)) {
+                yield $redis->del($this->getIdKey());
+            }
         }
 
         $denAgent = $this->_dependencyInjector->getShared('denAgent');
