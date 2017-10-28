@@ -22,6 +22,9 @@ class RedisQueue extends LkkRedisQueueService {
     //队列对象
     public static $queues = [];
 
+    //redis默认配置
+    public static $defaultCnf = null;
+
 
     /**
      * 构造函数
@@ -38,11 +41,23 @@ class RedisQueue extends LkkRedisQueueService {
      * @return array
      */
     public static function getDefultRedisCnf() {
-        return [
+        $cnf = [
             'host' => '127.0.0.1',
             'port' => 6379,
             'password' => null,
+            'select' => null,
         ];
+
+        return empty(self::$defaultCnf) ? $cnf : self::$defaultCnf;
+    }
+
+
+    /**
+     * 重置默认的redis配置
+     * @param array $conf
+     */
+    public static function resetDefultRedisCnf(array $conf) {
+        self::$defaultCnf = $conf;
     }
 
 
