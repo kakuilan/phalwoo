@@ -15,14 +15,12 @@
     }
   ],
   "require": {
-    "php": ">=7.0.0",
+    "php": "^7.0",
     "ext-phalcon": "^3.2",
-    "ext-swoole": ">=1.9.9",
-    "monolog/monolog": "^1.22",
-    "phpunit/phpunit": "^6.1",
-    "mtdowling/cron-expression": "^1.2",
-    "react/promise": "^2.5",
-    "hprose/hprose": ">=2.0.0"
+    "ext-swoole": "^1.9",
+    "monolog/monolog": "^1.23",
+    "phpunit/phpunit": "^6.4",
+    "mtdowling/cron-expression": "^1.2"
   },
   "require-dev": {
     "kakuilan/kphplib": "dev-master",
