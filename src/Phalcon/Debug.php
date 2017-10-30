@@ -96,9 +96,9 @@ class Debug {
      * @return $this
      */
     public function setUri(string $uri) {
-		$this->_uri = $uri;
-		return $this;
-	}
+        $this->_uri = $uri;
+        return $this;
+    }
 
 
     /**
@@ -108,9 +108,9 @@ class Debug {
      * @return $this
      */
     public function setShowBackTrace(boolean $showBackTrace) {
-		$this->_showBackTrace = $showBackTrace;
-		return $this;
-	}
+        $this->_showBackTrace = $showBackTrace;
+        return $this;
+    }
 
 
     /**
@@ -120,9 +120,9 @@ class Debug {
      * @return $this
      */
     public function setShowFiles(boolean $showFiles) {
-		$this->_showFiles = $showFiles;
-		return $this;
-	}
+        $this->_showFiles = $showFiles;
+        return $this;
+    }
 
 
     /**
@@ -133,9 +133,9 @@ class Debug {
      * @return $this
      */
     public function setShowFileFragment(boolean $showFileFragment) {
-		$this->_showFileFragment = $showFileFragment;
-		return $this;
-	}
+        $this->_showFileFragment = $showFileFragment;
+        return $this;
+    }
 
 
     /**
@@ -163,7 +163,7 @@ class Debug {
      * @return $this
      */
     public function listenExceptions() {
-        set_exception_handler([$this, 'onUncaughtException']));
+        set_exception_handler([$this, 'onUncaughtException']);
 
         return $this;
     }
@@ -431,10 +431,10 @@ class Debug {
      */
     protected function showTraceItem(int $n, array $trace) {
         $className = $prepareInternalClass = $preparedFunctionName = $html = $classReflection = $prepareUriClass =
-			$functionName = $functionReflection = $traceArgs = $arguments = $argument =
-			$filez = $line = $showFiles = $lines = $numberLines = $showFileFragment =
-			$beforeLine = $firstLine = $afterLine = $lastLine = $i = $linePosition = $currentLine =
-			$classNameWithLink = $functionNameWithLink = null;
+        $functionName = $functionReflection = $traceArgs = $arguments = $argument =
+        $filez = $line = $showFiles = $lines = $numberLines = $showFileFragment =
+        $beforeLine = $firstLine = $afterLine = $lastLine = $i = $linePosition = $currentLine =
+        $classNameWithLink = $functionNameWithLink = null;
 
         /**
          * Every trace in the backtrace have a unique number
@@ -459,31 +459,31 @@ class Debug {
                  * Generate a link to the official docs
                  */
                 $classNameWithLink = "<a target=\"_new\" href=\"//api.phalconphp.com/class/" . $prepareUriClass . ".html\">" . $className . "</a>";
-			} else {
+            } else {
                 $classReflection = new \ReflectionClass($className);
 
-				/**
+                /**
                  * Check if classes are PHP's classes
                  */
-				if ($classReflection->isInternal()) {
+                if ($classReflection->isInternal()) {
 
                     $prepareInternalClass = str_replace("_", "-", strtolower($className));
 
-					/**
+                    /**
                      * Generate a link to the official docs
                      */
-					$classNameWithLink = "<a target=\"_new\" href=\"http://php.net/manual/en/class." . $prepareInternalClass . ".php\">" . $className . "</a>";
-				} else {
+                    $classNameWithLink = "<a target=\"_new\" href=\"http://php.net/manual/en/class." . $prepareInternalClass . ".php\">" . $className . "</a>";
+                } else {
                     $classNameWithLink = $className;
-				}
-			}
+                }
+            }
 
-			$html .= "<span class=\"error-class\">" . $classNameWithLink . "</span>";
+            $html .= "<span class=\"error-class\">" . $classNameWithLink . "</span>";
 
-			/**
+            /**
              * Object access operator: static/instance
              */
-			$html .= $trace["type"];
+            $html .= $trace["type"];
         }
 
 
@@ -513,9 +513,9 @@ class Debug {
                 } else {
                     $functionNameWithLink = $functionName;
                 }
-			} else {
+            } else {
                 $functionNameWithLink = $functionName;
-			}
+            }
 
         }
 
@@ -573,8 +573,8 @@ class Debug {
                  */
                 $lines = file($filez);
 
-				$numberLines = count($lines);
-				$showFileFragment = $this->_showFileFragment;
+                $numberLines = count($lines);
+                $showFileFragment = $this->_showFileFragment;
 
                 /**
                  * File fragments just show a piece of the file where the exception is located
@@ -586,53 +586,53 @@ class Debug {
                      */
                     $beforeLine = $line - 7;
 
-					/**
+                    /**
                      * Check for overflows
                      */
-					if ($beforeLine < 1) {
+                    if ($beforeLine < 1) {
                         $firstLine = 1;
-					} else {
+                    } else {
                         $firstLine = $beforeLine;
-					}
+                    }
 
-					/**
+                    /**
                      * Take five lines after the current exception's line, @TODO add an option for this
                      */
-					$afterLine = $line + 5;
+                    $afterLine = $line + 5;
 
-					/**
+                    /**
                      * Check for overflows
                      */
-					if ($afterLine > $numberLines) {
+                    if ($afterLine > $numberLines) {
                         $lastLine = $numberLines;
-					} else {
+                    } else {
                         $lastLine = $afterLine;
-					}
+                    }
 
-					$html .= "<pre class=\"prettyprint highlight:" . $firstLine . ":" . $line . " linenums:" . $firstLine . "\">";
-				} else {
+                    $html .= "<pre class=\"prettyprint highlight:" . $firstLine . ":" . $line . " linenums:" . $firstLine . "\">";
+                } else {
                     $firstLine = 1;
-					$lastLine = $numberLines;
-					$html .= "<pre class=\"prettyprint highlight:" . $firstLine . ":" . $line . " linenums error-scroll\">";
-				}
+                    $lastLine = $numberLines;
+                    $html .= "<pre class=\"prettyprint highlight:" . $firstLine . ":" . $line . " linenums error-scroll\">";
+                }
 
                 $i = $firstLine;
-				while ($i <= $lastLine) {
+                while ($i <= $lastLine) {
 
                     /**
                      * Current line in the file
                      */
                     $linePosition = $i - 1;
 
-					/**
+                    /**
                      * Current line content in the piece of file
                      */
-					$currentLine = $lines[$linePosition];
+                    $currentLine = $lines[$linePosition];
 
-					/**
+                    /**
                      * File fragments are cleaned, removing tabs and comments
                      */
-					if ($showFileFragment) {
+                    if ($showFileFragment) {
                         if ($i == $firstLine ){
                             if (preg_match("#\\*\\/#", rtrim($currentLine))) {
                                 $currentLine = str_replace("* /", " ", $currentLine);
@@ -640,22 +640,22 @@ class Debug {
                         }
                     }
 
-					/**
+                    /**
                      * Print a non break space if the current line is a line break, this allows to show the html zebra properly
                      */
-					if ($currentLine == "\n" || $currentLine == "\r\n") {
+                    if ($currentLine == "\n" || $currentLine == "\r\n") {
                         $html .= "&nbsp;\n";
-					} else {
+                    } else {
                         /**
                          * Don't escape quotes
                          * We assume the file is utf-8 encoded, @TODO add an option for this
                          */
                         $html .= htmlentities(str_replace("\t", "  ", $currentLine), ENT_COMPAT, "UTF-8");
-					}
+                    }
 
-					$i++;
-				}
-				$html .= "</pre>";
+                    $i++;
+                }
+                $html .= "</pre>";
 
             }//endif $showFiles
 
@@ -663,7 +663,7 @@ class Debug {
 
         $html .= "</td></tr>";
 
-		return $html;
+        return $html;
     }
 
 
@@ -706,8 +706,8 @@ class Debug {
         if (self::$_isActive) {
             $this->_html = $exception->getMessage();
             $this->sendError();
-			return;
-		}
+            return;
+        }
 
 
         /**
@@ -715,7 +715,7 @@ class Debug {
          */
         self::$_isActive = true;
 
-		$className = get_class($exception);
+        $className = get_class($exception);
 
         /**
          * Escape the exception's message avoiding possible XSS injections?
@@ -727,7 +727,7 @@ class Debug {
          * Use the exception info as document's title
          */
         $html = "<html><head><title>" . $className . ": " . $escapedMessage . "</title>";
-		$html .= $this->getCssSources() . "</head><body>";
+        $html .= $this->getCssSources() . "</head><body>";
 
 
         /**
@@ -740,9 +740,9 @@ class Debug {
          * Main exception info
          */
         $html .= "<div align=\"center\"><div class=\"error-main\">";
-		$html .= "<h1>" . $className . ": " . $escapedMessage . "</h1>";
-		$html .= "<span class=\"error-file\">" . $exception->getFile() . " (" . $exception->getLine() . ")</span>";
-		$html .= "</div>";
+        $html .= "<h1>" . $className . ": " . $escapedMessage . "</h1>";
+        $html .= "<span class=\"error-file\">" . $exception->getFile() . " (" . $exception->getLine() . ")</span>";
+        $html .= "</div>";
 
         $showBackTrace = $this->_showBackTrace;
 
@@ -753,87 +753,87 @@ class Debug {
 
             $dataVars = $this->_data;
 
-			/**
+            /**
              * Create the tabs in the page
              */
-			$html .= "<div class=\"error-info\"><div id=\"tabs\"><ul>";
-			$html .= "<li><a href=\"#error-tabs-1\">Backtrace</a></li>";
-			$html .= "<li><a href=\"#error-tabs-2\">Request</a></li>";
-			$html .= "<li><a href=\"#error-tabs-3\">Server</a></li>";
-			$html .= "<li><a href=\"#error-tabs-4\">Included Files</a></li>";
-			$html .= "<li><a href=\"#error-tabs-5\">Memory</a></li>";
-			if (is_array($dataVars)) {
+            $html .= "<div class=\"error-info\"><div id=\"tabs\"><ul>";
+            $html .= "<li><a href=\"#error-tabs-1\">Backtrace</a></li>";
+            $html .= "<li><a href=\"#error-tabs-2\">Request</a></li>";
+            $html .= "<li><a href=\"#error-tabs-3\">Server</a></li>";
+            $html .= "<li><a href=\"#error-tabs-4\">Included Files</a></li>";
+            $html .= "<li><a href=\"#error-tabs-5\">Memory</a></li>";
+            if (is_array($dataVars)) {
                 $html .= "<li><a href=\"#error-tabs-6\">Variables</a></li>";
-			}
-			$html .= "</ul>";
+            }
+            $html .= "</ul>";
 
-			/**
+            /**
              * Print backtrace
              */
-			$html .= "<div id=\"error-tabs-1\"><table cellspacing=\"0\" align=\"center\" width=\"100%\">";
+            $html .= "<div id=\"error-tabs-1\"><table cellspacing=\"0\" align=\"center\" width=\"100%\">";
             foreach ($exception->getTrace() as $n => $traceItem)  {
                 /**
                  * Every line in the trace is rendered using "showTraceItem"
                  */
                 $html .= $this->showTraceItem($n, $traceItem);
-			}
-			$html .= "</table></div>";
+            }
+            $html .= "</table></div>";
 
-			/**
+            /**
              * Print _REQUEST superglobal
              */
-			$html .= "<div id=\"error-tabs-2\"><table cellspacing=\"0\" align=\"center\" class=\"superglobal-detail\">";
-			$html .= "<tr><th>Key</th><th>Value</th></tr>";
+            $html .= "<div id=\"error-tabs-2\"><table cellspacing=\"0\" align=\"center\" class=\"superglobal-detail\">";
+            $html .= "<tr><th>Key</th><th>Value</th></tr>";
             foreach ($_REQUEST as $keyRequest => $value) {
                 if (!is_array($value)) {
                     $html .= "<tr><td class=\"key\">" . keyRequest . "</td><td>" . $value . "</td></tr>";
-				} else {
+                } else {
                     $html .= "<tr><td class=\"key\">" . keyRequest . "</td><td>" . print_r($value, true) . "</td></tr>";
-				}
-			}
-			$html .= "</table></div>";
+                }
+            }
+            $html .= "</table></div>";
 
-			/**
+            /**
              * Print _SERVER superglobal
              */
-			$html .= "<div id=\"error-tabs-3\"><table cellspacing=\"0\" align=\"center\" class=\"superglobal-detail\">";
-			$html .= "<tr><th>Key</th><th>Value</th></tr>";
+            $html .= "<div id=\"error-tabs-3\"><table cellspacing=\"0\" align=\"center\" class=\"superglobal-detail\">";
+            $html .= "<tr><th>Key</th><th>Value</th></tr>";
             foreach ($_SERVER as $keyServer => $value) {
                 $html .= "<tr><td class=\"key\">" . $keyServer . "</td><td>" . $this->_getVarDump($value) . "</td></tr>";
-			}
-			$html .= "</table></div>";
+            }
+            $html .= "</table></div>";
 
-			/**
+            /**
              * Show included files
              */
-			$html .= "<div id=\"error-tabs-4\"><table cellspacing=\"0\" align=\"center\" class=\"superglobal-detail\">";
-			$html .= "<tr><th>#</th><th>Path</th></tr>";
+            $html .= "<div id=\"error-tabs-4\"><table cellspacing=\"0\" align=\"center\" class=\"superglobal-detail\">";
+            $html .= "<tr><th>#</th><th>Path</th></tr>";
             foreach (get_included_files() as $keyFile => $value) {
                 $html .= "<tr><td>" . $keyFile . "</th><td>" . $value . "</td></tr>";
-			}
-			$html .= "</table></div>";
+            }
+            $html .= "</table></div>";
 
-			/**
+            /**
              * Memory usage
              */
-			$html .= "<div id=\"error-tabs-5\"><table cellspacing=\"0\" align=\"center\" class=\"superglobal-detail\">";
-			$html .= "<tr><th colspan=\"2\">Memory</th></tr><tr><td>Usage</td><td>" . memory_get_usage(true) . "</td></tr>";
-			$html .= "</table></div>";
+            $html .= "<div id=\"error-tabs-5\"><table cellspacing=\"0\" align=\"center\" class=\"superglobal-detail\">";
+            $html .= "<tr><th colspan=\"2\">Memory</th></tr><tr><td>Usage</td><td>" . memory_get_usage(true) . "</td></tr>";
+            $html .= "</table></div>";
 
-			/**
+            /**
              * Print extra variables passed to the component
              */
             if (is_array($dataVars)) {
                 $html .= "<div id=\"error-tabs-6\"><table cellspacing=\"0\" align=\"center\" class=\"superglobal-detail\">";
-				$html .= "<tr><th>Key</th><th>Value</th></tr>";
+                $html .= "<tr><th>Key</th><th>Value</th></tr>";
                 foreach ($dataVars as $keyVar => $dataVar) {
                     $html .= "<tr><td class=\"key\">" . $keyVar . "</td><td>" . $this->_getVarDump($dataVar[0]) . "</td></tr>";
-				}
-				$html .= "</table></div>";
-			}
+                }
+                $html .= "</table></div>";
+            }
 
-			$html .= "</div>";
-		}//endif $showBackTrace
+            $html .= "</div>";
+        }//endif $showBackTrace
 
 
         /**
@@ -841,18 +841,18 @@ class Debug {
          */
         $html .= $this->getJsSources() . "</div></body></html>";
 
-		/**
+        /**
          * Print the HTML, @TODO, add an option to store the html
          */
-		$this->_html = $html;
-		$this->sendError();
+        $this->_html = $html;
+        $this->sendError();
 
-		/**
+        /**
          * Unlock the exception renderer
          */
-		self::$_isActive = false;
+        self::$_isActive = false;
 
-		return true;
+        return true;
     }
 
 
