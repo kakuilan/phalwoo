@@ -35,7 +35,7 @@ class View extends PhView {
      * @param string $actionName
      * @param array $params
      */
-    public function render(string $controllerName, string $actionName, $params = null) {
+    public function render($controllerName, $actionName, $params = null) {
         if (!is_string($controllerName) || !is_string($actionName)) {
             throw new Exception('Invalid parameter type.');
         }
@@ -261,7 +261,7 @@ class View extends PhView {
      * @param boolean $mustClean
      * @param \Phalcon\Cache\BackendInterface $cache
      */
-    protected function _engineRender(array $engines, string $viewPath, boolean $silence, boolean $mustClean, BackendInterface $cache = null) {
+    protected function _engineRender($engines, $viewPath, $silence, $mustClean, BackendInterface $cache = null) {
         $notExists = false;
         $renderLevel = $cacheLevel = 0;
         $key = $lifetime = $viewsDir = $basePath = $viewsDirPath =
@@ -277,11 +277,11 @@ class View extends PhView {
         foreach ($this->getViewsDirs() as $viewsDir) {
             if (!$this->_isAbsolutePath($viewPath)) {
                 $viewsDirPath = $basePath . $viewsDir . $viewPath;
-			} else {
+            } else {
                 $viewsDirPath = $viewPath;
-			}
+            }
 
-			if(is_object($cache)) {
+            if(is_object($cache)) {
                 $renderLevel = (int) $this->_renderLevel;
                 $cacheLevel = (int) $this->_cacheLevel;
 
@@ -296,79 +296,79 @@ class View extends PhView {
                         $lifetime = null;
                         $viewOptions = $this->_options;
 
-						/**
+                        /**
                          * Check if the user has defined a different options to the default
                          */
-						if(is_array($viewOptions) && isset($viewOptions['cache'])) {
-						    $cacheOptions = $viewOptions['cache'];
-						    if(is_array($cacheOptions)) {
-						        if(isset($cacheOptions["key"])) $key = $cacheOptions["key"];
-						        if(isset($cacheOptions["lifetime"])) $lifetime = $cacheOptions["lifetime"];
+                        if(is_array($viewOptions) && isset($viewOptions['cache'])) {
+                            $cacheOptions = $viewOptions['cache'];
+                            if(is_array($cacheOptions)) {
+                                if(isset($cacheOptions["key"])) $key = $cacheOptions["key"];
+                                if(isset($cacheOptions["lifetime"])) $lifetime = $cacheOptions["lifetime"];
 
                             }
                         }
 
 
-						/**
+                        /**
                          * If a cache key is not set we create one using a md5
                          */
-						if ($key === null) {
+                        if ($key === null) {
                             $key = md5($viewPath);
-						}
+                        }
 
-						/**
+                        /**
                          * We start the cache using the key set
                          */
-						$cachedView = $cache->start($key, $lifetime);
-						if ($cachedView !== null) {
+                        $cachedView = $cache->start($key, $lifetime);
+                        if ($cachedView !== null) {
                             $this->_content = $cachedView;
-							return null;
-						}
-					}
+                            return null;
+                        }
+                    }
 
-					/**
+                    /**
                      * This method only returns true if the cache has not expired
                      */
-					if (!$cache->isFresh()) {
-						return null;
-					}
-				}
-                
+                    if (!$cache->isFresh()) {
+                        return null;
+                    }
+                }
+
             }//endif cache
 
 
             /**
              * Views are rendered in each engine
              */
-            foreach ($engines as $entension => $engine) {
-
+            foreach ($engines as $extension => $engine) {
                 $viewEnginePath = $viewsDirPath . $extension;
-				if (file_exists($viewEnginePath)) {
+                $check = file_exists($viewEnginePath);
+                if (file_exists($viewEnginePath)) {
 
                     /**
                      * Call beforeRenderView if there is an events manager available
                      */
-					if (is_object($eventsManager)) {
+                    if (is_object($eventsManager)) {
                         $this->_activeRenderPaths = $viewEnginePath;
                         if ($eventsManager->fire("view:beforeRenderView", $this, $viewEnginePath) === false) {
                             continue;
                         }
-					}
+                    }
 
-					$engine->render($viewEnginePath, $viewParams, $mustClean);
+                    $engine->render($viewEnginePath, $viewParams, $mustClean);
 
-					/**
+                    /**
                      * Call afterRenderView if there is an events manager available
                      */
-					$notExists = false;
-					if (is_object($eventsManager)) {
+                    $notExists = false;
+                    if (is_object($eventsManager)) {
                         $eventsManager->fire("view:afterRenderView", $this);
-					}
-					break;
-				}
+                    }
+                    break;
+                }
 
-				$viewEnginePaths[] = $viewEnginePath;
-			}
+                $viewEnginePaths[] = $viewEnginePath;
+            }
 
         }//endif getViewsDirs
 
@@ -379,13 +379,13 @@ class View extends PhView {
              */
             if (is_object($eventsManager)) {
                 $this->_activeRenderPaths = $viewEnginePaths;
-				$eventsManager->fire("view:notFoundView", $this, $viewEnginePath);
-			}
+                $eventsManager->fire("view:notFoundView", $this, $viewEnginePath);
+            }
 
-			if (!$silence) {
+            if (!$silence) {
                 throw new Exception("View '" . $viewPath . "' was not found in any of the views directory");
             }
-		}
+        }
 
     }
 
