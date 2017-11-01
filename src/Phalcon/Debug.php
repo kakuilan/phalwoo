@@ -145,7 +145,7 @@ class Debug {
      *
      * @return $this
      */
-    public function listen(boolean $exceptions = true, boolean $lowSeverity = false) {
+    public function listen($exceptions = true, $lowSeverity = false) {
         if ($exceptions) {
             $this->listenExceptions();
         }
