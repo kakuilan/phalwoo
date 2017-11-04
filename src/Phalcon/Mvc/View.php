@@ -391,4 +391,10 @@ class View extends PhView {
 
 
 
+    public function setDI (DiInterface $dependencyInjector) {
+        parent::setDI($dependencyInjector);
+        //TODO
+    }
+
+
 }
