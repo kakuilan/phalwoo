@@ -246,7 +246,17 @@ class SwooleServer extends LkkService {
      */
     protected function setRediQueue() {
         //默认使用工作流队列,子类可自行更改
-        $this->rediQueue = RedisQueue::getQueueObject(RedisQueue::APP_WORKFLOW_QUEUE_NAME, []);
+        $redisCnf = $this->poolManager->getConf('redis_queue');
+        $conf = $redisCnf ? [
+            'redisConf' => [
+                'host' => $redisCnf['args']['host'],
+                'port' => $redisCnf['args']['port'],
+                'password' => $redisCnf['args']['auth'],
+                'select' => $redisCnf['args']['select'],
+            ],
+            'transTime' => 30,
+        ] : [];
+        $this->rediQueue = RedisQueue::getQueueObject(RedisQueue::APP_WORKFLOW_QUEUE_NAME, $conf);
     }
 
 

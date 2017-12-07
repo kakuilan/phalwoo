@@ -67,7 +67,9 @@ class PoolManager extends LkkService {
      */
     public function initAll() {
         foreach ($this->conf as $name => $itme) {
-            $this->init($name);
+            if(isset($itme['size']) && $itme['size']>0) {
+                $this->init($name);
+            }
         }
     }
 
