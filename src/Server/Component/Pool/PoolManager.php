@@ -47,6 +47,22 @@ class PoolManager extends LkkService {
 
 
     /**
+     * 获取配置
+     * @param string $key
+     * @return array|mixed|null
+     */
+    public function getConf($key='') {
+        if(empty($key)) {
+            $res = $this->conf;
+        }else{
+            $res = isset($this->conf[$key]) ? $this->conf[$key] : null;
+        }
+
+        return $res;
+    }
+
+
+    /**
      * 初始化全部
      */
     public function initAll() {
