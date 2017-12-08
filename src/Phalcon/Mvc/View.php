@@ -390,10 +390,19 @@ class View extends PhView {
     }
 
 
-
+    /**
+     * 设置DI容器
+     * @param DiInterface $dependencyInjector
+     */
     public function setDI (DiInterface $dependencyInjector) {
         parent::setDI($dependencyInjector);
-        //TODO
+
+        //模板引起也注入DI容器
+        $engines = $this->_loadTemplateEngines();
+        foreach ($engines as $engine) {
+            $engine->setDI($dependencyInjector);
+        }
+
     }
 
 
