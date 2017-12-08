@@ -271,6 +271,14 @@ class View extends PhView {
         $notExists = true;
         $basePath = $this->_basePath;
         $viewParams = $this->_viewParams;
+
+        //静态资源管理对象
+        $di = $this->getDI();
+        if(is_object($di)) {
+            $assets = $di->getShared('assets');
+            $this->_viewParams['assets'] = $assets;
+        }
+
         $eventsManager = $this->_eventsManager;
         $viewEnginePaths = [];
 
