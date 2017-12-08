@@ -409,6 +409,8 @@ class View extends PhView {
         $engines = $this->_loadTemplateEngines();
         foreach ($engines as $engine) {
             $engine->setDI($dependencyInjector);
+            $compiler = $engine->getCompiler();
+            $compiler->setDI($dependencyInjector);
         }
 
     }
