@@ -80,6 +80,7 @@ class Request implements RequestInterface, InjectionAwareInterface {
      * @throws Exception
      */
     protected function getParamData($sourceType, $name = null, $filters = null, $defaultValue = null, $notAllowEmpty = false, $noRecursive = false) {
+        $this->getSwooleRequest();
         switch ($sourceType) {
             case INPUT_REQUEST:
                 $source = array_merge(($this->_swooleRequest->get ?? []), ($this->_swooleRequest->post ?? []));

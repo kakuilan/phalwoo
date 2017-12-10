@@ -45,12 +45,18 @@ trait HttpTrait {
         return $di;
     }
 
+
+    public function setSwooleRequest(SwooleRequest $request) {
+        $this->_swooleRequest = $request;
+    }
+
+
     /**
      * @param null $di
      * @return mixed|SwooleRequest
      * @throws RequestException
      */
-    protected function getSwooleRequest($di =null) {
+    public function getSwooleRequest($di =null) {
         if($this->_swooleRequest) return $this->_swooleRequest;
 
         $di = $this->_getDi($di);
@@ -64,12 +70,18 @@ trait HttpTrait {
         return $this->_swooleRequest;
     }
 
+
+    public function setSwooleResponse(SwooleResponse $response) {
+        $this->_swooleResponse = $response;
+    }
+
+
     /**
      * @param null $di
      * @return mixed|SwooleResponse
      * @throws ResponseException
      */
-    protected function getSwooleResponse($di=null) {
+    public function getSwooleResponse($di=null) {
         if($this->_swooleResponse) return $this->_swooleResponse;
 
         $di = $this->_getDi($di);
@@ -80,5 +92,8 @@ trait HttpTrait {
 
         return $this->_swooleResponse;
     }
+
+
+
 
 }
