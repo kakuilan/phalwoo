@@ -10,7 +10,8 @@
 
 namespace Lkk\Phalwoo\Phalcon\Assets;
 
-use Phalcon\Tag;
+//use Phalcon\Tag;
+use Lkk\Phalwoo\Phalcon\Tag;
 use Phalcon\Assets\Resource;
 use Phalcon\Assets\Collection;
 use Phalcon\Assets\Exception;
@@ -773,7 +774,8 @@ class Manager {
             $collection = $this->get($collectionName);
         }
 
-        return $this->output($collection, ["Phalcon\\Tag", "stylesheetLink"], "css");
+        //return $this->output($collection, ["Phalcon\\Tag", "stylesheetLink"], "css");
+        return $this->output($collection, ["Lkk\\Phalwoo\\Phalcon\\Tag", "stylesheetLink"], "css");
     }
 
 
@@ -806,7 +808,7 @@ class Manager {
             $collection = $this->get($collectionName);
 		}
 
-        return $this->output($collection, ["Phalcon\\Tag", "javascriptInclude"], "js");
+        return $this->output($collection, ["Lkk\\Phalwoo\\Phalcon\\Tag", "javascriptInclude"], "js");
     }
 
 
