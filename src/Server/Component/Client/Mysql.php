@@ -13,7 +13,7 @@ namespace Lkk\Phalwoo\Server\Component\Client;
 use Lkk\Phalwoo\Server\SwooleServer;
 use Lkk\Phalwoo\Server\ServerConst;
 use Lkk\Phalwoo\Server\Component\Pool\Adapter as PoolAdapter;
-use Lkk\Phalwoo\Server\Concurrent\Promise;
+use Lkk\Concurrent\Promise;
 use Lkk\Helpers\CommonHelper;
 
 class Mysql {

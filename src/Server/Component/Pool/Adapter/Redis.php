@@ -14,7 +14,7 @@ use Lkk\Phalwoo\Server\Component\Pool\Adapter;
 use Lkk\Phalwoo\Server\ServerConst;
 use Lkk\Phalwoo\Server\SwooleServer;
 use Lkk\Phalwoo\Server\Component\Client\Redis as Driver;
-use Lkk\Phalwoo\Server\Concurrent\Promise;
+use Lkk\Concurrent\Promise;
 
 
 class Redis extends Adapter {
