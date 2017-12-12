@@ -294,8 +294,8 @@ class Request implements RequestInterface, InjectionAwareInterface {
      * @return bool
      */
     public function isAjax() {
-        return (isset($this->_swooleRequest->header["x_requested_with"]) && $this->_swooleRequest->header["x_requested_with"] === "XMLHttpRequest")
-            OR (isset($this->_swooleRequest->server["http_x_requested_with"]) && $this->_swooleRequest->server["http_x_requested_with"] === "XMLHttpRequest");
+        return (isset($this->_swooleRequest->header["x-requested-with"]) && $this->_swooleRequest->header["x-requested-with"] === "XMLHttpRequest")
+            OR (isset($this->_swooleRequest->server["http-x-requested_with"]) && $this->_swooleRequest->server["http-x-requested_with"] === "XMLHttpRequest");
     }
 
 
@@ -484,10 +484,10 @@ class Request implements RequestInterface, InjectionAwareInterface {
          * Proxies uses this IP
          */
         if ($trustForwardedHeader) {
-            if (isset($this->_swooleRequest->header['x_forwarded_for'])) {
-                $address = $this->_swooleRequest->header['x_forwarded_for'];
-            } else if (isset($this->_swooleRequest->header['client_ip'])) {
-                $address = $this->_swooleRequest->header['client_ip'];
+            if (isset($this->_swooleRequest->header['x-forwarded-for'])) {
+                $address = $this->_swooleRequest->header['x-forwarded-for'];
+            } else if (isset($this->_swooleRequest->header['client-ip'])) {
+                $address = $this->_swooleRequest->header['client-ip'];
             }
         }
 
