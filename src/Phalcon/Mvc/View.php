@@ -57,6 +57,10 @@ class View extends PhView {
             return false;
         }
 
+        //路径统一小写
+        if($controllerName) $controllerName = strtolower($controllerName);
+        if($actionName) $actionName = strtolower($actionName);
+
         $this->_controllerName = $controllerName;
         $this->_actionName = $actionName;
         $this->_params = $params;
@@ -92,7 +96,7 @@ class View extends PhView {
 
 
         if ($pickView === null) {
-            $renderView = $controllerName . "/" . $actionName;
+            $renderView = $controllerName ? ($controllerName . "/" . $actionName) : $actionName;
         } else {
 
             /**
