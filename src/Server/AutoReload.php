@@ -180,7 +180,8 @@ class AutoReload {
         }
 
         $dirs = (array)$dir;
-        foreach ($dirs as $k=>$dir) {
+        foreach ($dirs as $k=>&$dir) {
+            $dir = rtrim($dir, '/');
             if(!is_dir($dir)) {
                 unset($dirs[$k]);
                 continue;
