@@ -9,7 +9,6 @@
 
 namespace Lkk\Phalwoo\Server;
 
-use \Exception;
 use Lkk\Helpers\CommonHelper;
 use Lkk\Phalwoo\Server\SwooleServer;
 
@@ -46,7 +45,8 @@ class AutoReload {
      * @param string $path
      */
     public static function setSelfPidPath($path='') {
-        if(!CommonHelper::isReallyWritable($path)) {
+        $dir = dirname($path);
+        if(!CommonHelper::isReallyWritable($dir)) {
             self::$selfPidFile = '/tmp/'.self::$prcessTitle.'.pid';
         }else{
             self::$selfPidFile = $path;
@@ -84,12 +84,11 @@ class AutoReload {
 
     /**
      * @param $serverPid
-     * @throws Exception
      */
     public function __construct($serverPid) {
         $this->pid = $serverPid;
         if (posix_kill($serverPid, 0) === false) {
-            throw new Exception("Process#$serverPid not found.");
+            die("Error!Server process#[$serverPid] not found.\r\n");
         }
         $this->inotify = inotify_init();
         $this->events = IN_MODIFY | IN_DELETE | IN_CREATE | IN_MOVE;
@@ -171,12 +170,11 @@ class AutoReload {
      * @param string|array $dir
      * @param bool $root
      * @return bool
-     * @throws Exception
      */
     public function watch($dir, $root = true) {
         //检查目录
         if(is_string($dir)) {
-            if(!is_dir($dir)) throw new Exception("[$dir] is not a directory.");
+            if(!is_dir($dir)) die("Error![$dir] is not a directory.");
         }
 
         $dirs = (array)$dir;
@@ -194,7 +192,7 @@ class AutoReload {
         }
 
         if(empty($dirs)) {
-            throw new Exception("\$dir is empty.");
+            die("Error!\$dir is empty.");
         }
         sort($dirs);
 
@@ -231,6 +229,11 @@ class AutoReload {
     public function run() {
         $lastPid = self::getSelfPid();
         $currPid = getmypid();
+        $msg = "Service ".self::$prcessTitle." lastPid:[{$lastPid}] currPid:[{$currPid}]\r\n";
+        echo $msg;
+        /*$log = LOGDIR . time().'.log';
+        file_put_contents($log, $msg);*/
+
         if($lastPid>0 && $lastPid!=$currPid) { //结束旧进程
             while (1) {
                 $masterIsAlive = $lastPid && posix_kill($lastPid, 0);
@@ -246,10 +249,10 @@ class AutoReload {
         }
 
         SwooleServer::setProcessTitle(self::$prcessTitle);
-        self::writeSelfPidFile($currPid);
 
         echo "Service ".self::$prcessTitle ." start success and watching...\r\n";
 
+        self::writeSelfPidFile($currPid);
         swoole_event_wait();
     }
 
