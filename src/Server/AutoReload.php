@@ -64,10 +64,10 @@ class AutoReload {
 
 
     /**
-     * 获取热更新的进程pid
+     * 获取热更新自身的进程pid
      * @return int
      */
-    public static function getPid() {
+    public static function getSelfPid() {
         return file_exists(self::$selfPidFile) ? intval(file_get_contents(self::$selfPidFile)) : 0;
     }
 
@@ -213,7 +213,7 @@ class AutoReload {
      * 开始运行
      */
     public function run() {
-        $lastPid = self::getPid();
+        $lastPid = self::getSelfPid();
         $currPid = getmypid();
         if($lastPid>0 && $lastPid!=$currPid) { //结束旧进程
             while (1) {
@@ -238,4 +238,3 @@ class AutoReload {
 
 
 }
-
