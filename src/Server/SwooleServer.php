@@ -377,10 +377,12 @@ class SwooleServer extends LkkService {
 
     /**
      * 获取服务master进程PID
+     * @param array $conf
      * @return int
      */
-    public static function getMasterPid() {
-        $pids = explode(',', file_get_contents(self::$pidFile));
+    public static function getMasterPid(array $conf) {
+        $file = self::getPidPath($conf);
+        $pids = explode(',', file_get_contents($file));
         $masterPid = intval($pids[0]);
         return $masterPid;
     }
@@ -388,10 +390,12 @@ class SwooleServer extends LkkService {
 
     /**
      * 获取服务manager进程PID
+     * @param array $conf
      * @return int
      */
-    public static function getManagerPid() {
-        $pids = explode(',', file_get_contents(self::$pidFile));
+    public static function getManagerPid(array $conf) {
+        $file = self::getPidPath($conf);
+        $pids = explode(',', file_get_contents($file));
         $managerPid = isset($pids[1]) ? intval($pids[1]) : 0;
         return $managerPid;
     }

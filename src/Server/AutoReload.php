@@ -232,6 +232,8 @@ class AutoReload {
         SwooleServer::setProcessTitle(self::$prcessTitle);
         self::writeSelfPidFile($currPid);
 
+        echo "Service ".self::$prcessTitle ." start success and watching...\r\n";
+
         swoole_event_wait();
     }
 
