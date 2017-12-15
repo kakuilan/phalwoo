@@ -163,48 +163,63 @@ class AutoReload {
         foreach($this->watchFiles as $wd) {
             inotify_rm_watch($this->inotify, $wd);
         }
-        $this->watchFiles = array();
+        $this->watchFiles = [];
     }
 
     /**
      * 监控目录
-     * @param $dir
+     * @param string|array $dir
      * @param bool $root
      * @return bool
      * @throws Exception
      */
     public function watch($dir, $root = true) {
-        //目录不存在
-        if (!is_dir($dir)) {
-            throw new Exception("[$dir] is not a directory.");
+        //检查目录
+        if(is_string($dir)) {
+            if(!is_dir($dir)) throw new Exception("[$dir] is not a directory.");
         }
-        //避免重复监听
-        if (isset($this->watchFiles[$dir])) {
-            return false;
-        }
-        //根目录
-        if ($root) {
-            $this->rootDirs[] = $dir;
-        }
-        $wd = inotify_add_watch($this->inotify, $dir, $this->events);
-        $this->watchFiles[$dir] = $wd;
-        $files = scandir($dir);
-        foreach ($files as $f) {
-            if ($f == '.' or $f == '..') {
+
+        $dirs = (array)$dir;
+        foreach ($dirs as $k=>$dir) {
+            if(!is_dir($dir)) {
+                unset($dirs[$k]);
+                continue;
+            }elseif (isset($this->watchFiles[$dir])) { //避免重复监听
                 continue;
             }
-            $path = $dir . '/' . $f;
-            //递归目录
-            if (is_dir($path)) {
-                $this->watch($path, false);
-            }
-            //检测文件类型
-            $fileType = strrchr($f, '.');
-            if (isset($this->reloadFileTypes[$fileType])) {
-                $wd = inotify_add_watch($this->inotify, $path, $this->events);
-                $this->watchFiles[$path] = $wd;
+
+            //根目录
+            if($root) $this->rootDirs[] = $dir;
+        }
+
+        if(empty($dirs)) {
+            throw new Exception("\$dir is empty.");
+        }
+        sort($dirs);
+
+        //遍历监听目录
+        foreach ($dirs as $dir) {
+            $wd = inotify_add_watch($this->inotify, $dir, $this->events);
+            $this->watchFiles[$dir] = $wd;
+            $files = scandir($dir);
+            foreach ($files as $f) {
+                if ($f == '.' or $f == '..') {
+                    continue;
+                }
+                $path = $dir . '/' . $f;
+                //递归目录
+                if (is_dir($path)) {
+                    $this->watch($path, false);
+                }
+                //检测文件类型
+                $fileType = strrchr($f, '.');
+                if (isset($this->reloadFileTypes[$fileType])) {
+                    $wd = inotify_add_watch($this->inotify, $path, $this->events);
+                    $this->watchFiles[$path] = $wd;
+                }
             }
         }
+
         return true;
     }
 
