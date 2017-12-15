@@ -9,11 +9,9 @@
 
 namespace Lkk\Phalwoo\Server;
 
+use \Exception;
 use Lkk\Helpers\CommonHelper;
 use Lkk\Phalwoo\Server\SwooleServer;
-
-class NotFound extends \Exception {
-}
 
 class AutoReload {
 
@@ -86,12 +84,12 @@ class AutoReload {
 
     /**
      * @param $serverPid
-     * @throws NotFound
+     * @throws Exception
      */
     public function __construct($serverPid) {
         $this->pid = $serverPid;
         if (posix_kill($serverPid, 0) === false) {
-            throw new NotFound("Process#$serverPid not found.");
+            throw new Exception("Process#$serverPid not found.");
         }
         $this->inotify = inotify_init();
         $this->events = IN_MODIFY | IN_DELETE | IN_CREATE | IN_MOVE;
@@ -173,12 +171,12 @@ class AutoReload {
      * @param $dir
      * @param bool $root
      * @return bool
-     * @throws NotFound
+     * @throws Exception
      */
     public function watch($dir, $root = true) {
         //目录不存在
         if (!is_dir($dir)) {
-            throw new NotFound("[$dir] is not a directory.");
+            throw new Exception("[$dir] is not a directory.");
         }
         //避免重复监听
         if (isset($this->watchFiles[$dir])) {
