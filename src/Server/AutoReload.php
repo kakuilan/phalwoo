@@ -4,10 +4,13 @@
  * User: kakuilan@163.com
  * Date: 2017/12/15
  * Time: 10:52
- * Desc: -自动热更新[须inotify]
+ * Desc: -自动热更新[须inotify扩展]
  */
 
 namespace Lkk\Phalwoo\Server;
+
+use Lkk\Helpers\CommonHelper;
+use Lkk\Phalwoo\Server\SwooleServer;
 
 class NotFound extends \Exception {
 }
@@ -23,6 +26,10 @@ class AutoReload {
     protected $watchFiles = [];
     protected $afterNSeconds = 10;
 
+    //热更新守护进程pid文件
+    public static $prcessTitle = 'phalwoo_inotify';
+    public static $selfPidFile;
+
     /**
      * 正在reload
      */
@@ -35,6 +42,42 @@ class AutoReload {
      */
     protected $rootDirs = [];
 
+
+    /**
+     * 设置自身pid文件路径
+     * @param string $path
+     */
+    public static function setSelfPidPath($path='') {
+        if(!CommonHelper::isReallyWritable($path)) {
+            self::$selfPidFile = '/tmp/'.self::$prcessTitle.'.pid';
+        }else{
+            self::$selfPidFile = $path;
+        }
+    }
+
+
+    /**
+     * 写入自身pid到文件
+     * @param int $pid
+     */
+    public static function writeSelfPidFile($pid=0) {
+        file_put_contents(self::$selfPidFile, $pid);
+    }
+
+
+    /**
+     * 获取热更新的进程pid
+     * @return int
+     */
+    public static function getPid() {
+        return file_exists(self::$selfPidFile) ? intval(file_get_contents(self::$selfPidFile)) : 0;
+    }
+
+
+    /**
+     * 输出日志
+     * @param $log
+     */
     public function putLog($log) {
         $_log = "[".date('Y-m-d H:i:s')."]\t".$log."\n";
         echo $_log;
@@ -80,6 +123,9 @@ class AutoReload {
     }
 
 
+    /**
+     * 重载
+     */
     public function reload() {
         $this->putLog("reloading");
         //向主进程发送信号
@@ -123,6 +169,7 @@ class AutoReload {
     }
 
     /**
+     * 监控目录
      * @param $dir
      * @param bool $root
      * @return bool
@@ -163,7 +210,30 @@ class AutoReload {
         return true;
     }
 
+
+    /**
+     * 开始运行
+     */
     public function run() {
+        $lastPid = self::getPid();
+        $currPid = getmypid();
+        if($lastPid>0 && $lastPid!=$currPid) { //结束旧进程
+            while (1) {
+                $masterIsAlive = $lastPid && posix_kill($lastPid, 0);
+                if ($masterIsAlive) {
+                    // Waiting amoment.
+                    echo "... ";
+                    sleep(1);
+                    continue;
+                }
+                echo("Service ".self::$prcessTitle." kill success\r\n");
+                break;
+            }
+        }
+
+        SwooleServer::setProcessTitle(self::$prcessTitle);
+        self::writeSelfPidFile($currPid);
+
         swoole_event_wait();
     }
 
