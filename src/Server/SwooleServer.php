@@ -375,6 +375,27 @@ class SwooleServer extends LkkService {
     }
 
 
+    /**
+     * 获取服务master进程PID
+     * @return int
+     */
+    public static function getMasterPid() {
+        $pids = explode(',', file_get_contents(self::$pidFile));
+        $masterPid = intval($pids[0]);
+        return $masterPid;
+    }
+
+
+    /**
+     * 获取服务manager进程PID
+     * @return int
+     */
+    public static function getManagerPid() {
+        $pids = explode(',', file_get_contents(self::$pidFile));
+        $managerPid = isset($pids[1]) ? intval($pids[1]) : 0;
+        return $managerPid;
+    }
+
 
     /**
      * 设置进程标题
