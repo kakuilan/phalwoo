@@ -12,14 +12,16 @@ namespace Lkk\Phalwoo\Server;
 
 use Lkk\Helpers\CommonHelper;
 use Lkk\Phalwoo\Server\SwooleServer;
+use Lkk\LkkService;
 
-class AutoReload {
+
+class AutoReload extends LkkService{
 
     /**
      * @var resource
      */
+    public $serverPid = 0;
     protected $inotify;
-    protected $pid;
     protected $reloadFileTypes = ['.php' => true];
     protected $watchFiles = [];
     protected $afterNSeconds = 1;
@@ -76,7 +78,7 @@ class AutoReload {
 
 
     /**
-     * 设置重启的函数
+     * 设置进程重启的函数
      * @param callable $func
      */
     public static function setRestartFunc(callable $func) {
@@ -117,13 +119,18 @@ class AutoReload {
 
 
     /**
-     * @param $serverPid
+     * AutoReload constructor.
+     * @param array $vars
      */
-    public function __construct($serverPid) {
-        $this->pid = $serverPid;
-        if (posix_kill($serverPid, 0) === false) {
-            die("Error!Server process#[$serverPid] not found.\r\n");
+    public function __construct($vars) {
+        parent::__construct($vars);
+
+        $this->serverPid = $vars['serverPid'] ?? 0;
+
+        if (!$this->serverPid || posix_kill($this->serverPid, 0) === false) {
+            die("Error!Server process#[{$this->serverPid}] not found.\r\n");
         }
+
         $this->inotify = inotify_init();
         $this->events = IN_MODIFY | IN_DELETE | IN_CREATE | IN_MOVE;
         swoole_event_add($this->inotify, function ($ifd) {
@@ -160,11 +167,11 @@ class AutoReload {
     public function reload() {
         $currPid = getmypid();
         $workPid = self::getSelfPid();
-        $msg = "reloading...: currPid:[{$currPid}] workPid:[{$workPid}] serverPid[{$this->pid}]";
+        $msg = "reloading...: currPid:[{$currPid}] workPid:[{$workPid}] serverPid[{$this->serverPid}]";
 
         self::log($msg);
         //向主进程发送信号
-        posix_kill($this->pid, SIGUSR1);
+        posix_kill($this->serverPid, SIGUSR1);
         //清理所有监听
         $this->clearWatch();
         //重新监听
