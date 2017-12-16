@@ -21,10 +21,10 @@ class AutoReload extends LkkService{
      * @var resource
      */
     public $serverPid = 0;
+    public $afterMillSeconds = 10000; //毫秒,默认10秒
     protected $inotify;
     protected $reloadFileTypes = ['.php' => true];
     protected $watchFiles = [];
-    protected $afterNSeconds = 1;
 
     //热更新守护进程pid文件
     public static $prcessTitle = 'phalwoo_inotify';
@@ -126,6 +126,7 @@ class AutoReload extends LkkService{
         parent::__construct($vars);
 
         $this->serverPid = $vars['serverPid'] ?? 0;
+        $this->afterMillSeconds = $vars['afterMillSeconds'] ?? 10000;
 
         if (!$this->serverPid || posix_kill($this->serverPid, 0) === false) {
             die("Error!Server process#[{$this->serverPid}] not found.\r\n");
@@ -149,11 +150,11 @@ class AutoReload extends LkkService{
                         continue;
                     }
                 }
-                //正在reload，不再接受任何事件，冻结10秒
+                //正在reload，不再接受任何事件，冻结N毫秒
                 if (!$this->reloading) {
-                    self::log("after {$this->afterNSeconds} seconds reload the server");
+                    self::log("after {$this->afterMillSeconds} milliseconds reload the server");
                     //有事件发生了，进行重启
-                    swoole_timer_after($this->afterNSeconds * 1000, array($this, 'reload'));
+                    swoole_timer_after($this->afterMillSeconds, array($this, 'reload'));
                     $this->reloading = true;
                 }
             }
