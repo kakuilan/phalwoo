@@ -22,11 +22,13 @@ class AutoReload {
     protected $pid;
     protected $reloadFileTypes = ['.php' => true];
     protected $watchFiles = [];
-    protected $afterNSeconds = 10;
+    protected $afterNSeconds = 1;
 
     //热更新守护进程pid文件
     public static $prcessTitle = 'phalwoo_inotify';
     public static $selfPidFile;
+    public static $selfLogFile;
+    public static $restartFunc;
 
     /**
      * 正在reload
@@ -52,6 +54,33 @@ class AutoReload {
         }else{
             self::$selfPidFile = $path;
         }
+
+        touch(self::$selfPidFile);
+    }
+
+
+    /**
+     * 设置自身log日志路径
+     * @param string $path
+     */
+    public static function setSelfLogPath($path='') {
+        $dir = dirname($path);
+        if(!CommonHelper::isReallyWritable($dir)) {
+            self::$selfPidFile = '/tmp/'.self::$prcessTitle.'.log';
+        }else{
+            self::$selfLogFile = $path;
+        }
+
+        touch(self::$selfLogFile);
+    }
+
+
+    /**
+     * 设置重启的函数
+     * @param callable $func
+     */
+    public static function setRestartFunc(callable $func) {
+        self::$restartFunc = $func;
     }
 
 
@@ -74,12 +103,16 @@ class AutoReload {
 
 
     /**
-     * 输出日志
-     * @param $log
+     * 记录日志
+     * @param string $msg
+     * @return bool
      */
-    public function putLog($log) {
-        $_log = "[".date('Y-m-d H:i:s')."]\t".$log."\n";
-        echo $_log;
+    public static function log($msg='') {
+        if(empty($msg)) return false;
+        $log = "[".date('Y-m-d H:i:s')."]\t".$msg."\r\n";
+        file_put_contents(self::$selfLogFile, $log, FILE_APPEND);
+
+        return true;
     }
 
 
@@ -111,7 +144,7 @@ class AutoReload {
                 }
                 //正在reload，不再接受任何事件，冻结10秒
                 if (!$this->reloading) {
-                    $this->putLog("after 10 seconds reload the server");
+                    self::log("after {$this->afterNSeconds} seconds reload the server");
                     //有事件发生了，进行重启
                     swoole_timer_after($this->afterNSeconds * 1000, array($this, 'reload'));
                     $this->reloading = true;
@@ -125,7 +158,11 @@ class AutoReload {
      * 重载
      */
     public function reload() {
-        $this->putLog("reloading");
+        $currPid = getmypid();
+        $workPid = self::getSelfPid();
+        $msg = "reloading...: currPid:[{$currPid}] workPid:[{$workPid}] serverPid[{$this->pid}]";
+
+        self::log($msg);
         //向主进程发送信号
         posix_kill($this->pid, SIGUSR1);
         //清理所有监听
@@ -230,15 +267,38 @@ class AutoReload {
     public function reset() {
         $currPid = getmypid();
         $lastPid = self::getSelfPid();
-        $pidFile = self::$selfPidFile;
 
         self::writeSelfPidFile($currPid);
-        swoole_timer_after(1000, function () use ($currPid,$pidFile) {
-            swoole_timer_tick(200, function () use ($currPid,$pidFile){
-                $lastPid = file_exists($pidFile) ? intval(file_get_contents($pidFile)) : 0;
-                if($lastPid>0 && $lastPid!=$currPid) die("reload exit.\r\n");
+        swoole_timer_after(1000, function () use ($lastPid, $currPid) {
+            $msg = "timer_after: lastPid:[{$lastPid}] currPid:[{$currPid}]";
+            self::log($msg);
+
+            swoole_timer_tick(200, function () use ($lastPid, $currPid){
+                $workPid = self::getSelfPid(); //被更新的运行时pid
+                if($workPid>0 && $workPid!=$currPid) {
+                    $msg = "reload exit: lastPid:[{$lastPid}] currPid:[{$currPid}] workPid:[{$workPid}]";
+                    self::log($msg);
+                    die($msg ."\r\n");
+                }
             });
         });
+    }
+
+
+    /**
+     * 退出时检查
+     */
+    public function __destruct() {
+        $currPid = getmypid();
+        $workPid = self::getSelfPid();
+        $msg = "__destruct: currPid:[{$currPid}] workPid:[{$workPid}]";
+        self::log($msg);
+
+        //在另一个进程重启
+        if($workPid > 0 && $currPid==$workPid) {
+            $this->reload();
+            call_user_func(self::$restartFunc);
+        }
     }
 
 
