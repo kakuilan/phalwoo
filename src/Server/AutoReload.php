@@ -5,6 +5,7 @@
  * Date: 2017/12/15
  * Time: 10:52
  * Desc: -自动热更新[须inotify扩展]
+ * 注意: 作为popen子进程运行时,不能有任何输出
  */
 
 namespace Lkk\Phalwoo\Server;
@@ -224,35 +225,28 @@ class AutoReload {
 
 
     /**
+     * 重置(结束旧进程)
+     */
+    public function reset() {
+        $currPid = getmypid();
+        $lastPid = self::getSelfPid();
+        $pidFile = self::$selfPidFile;
+
+        self::writeSelfPidFile($currPid);
+        swoole_timer_after(1000, function () use ($currPid,$pidFile) {
+            swoole_timer_tick(200, function () use ($currPid,$pidFile){
+                $lastPid = file_exists($pidFile) ? intval(file_get_contents($pidFile)) : 0;
+                if($lastPid>0 && $lastPid!=$currPid) die("reload exit.\r\n");
+            });
+        });
+    }
+
+
+    /**
      * 开始运行
      */
     public function run() {
-        $lastPid = self::getSelfPid();
-        $currPid = getmypid();
-        $msg = "Service ".self::$prcessTitle." lastPid:[{$lastPid}] currPid:[{$currPid}]\r\n";
-        echo $msg;
-        /*$log = LOGDIR . time().'.log';
-        file_put_contents($log, $msg);*/
-
-        if($lastPid>0 && $lastPid!=$currPid) { //结束旧进程
-            while (1) {
-                $masterIsAlive = $lastPid && posix_kill($lastPid, 0);
-                if ($masterIsAlive) {
-                    // Waiting amoment.
-                    echo "... ";
-                    sleep(1);
-                    continue;
-                }
-                echo("Service ".self::$prcessTitle." kill success\r\n");
-                break;
-            }
-        }
-
-        SwooleServer::setProcessTitle(self::$prcessTitle);
-
-        echo "Service ".self::$prcessTitle ." start success and watching...\r\n";
-
-        self::writeSelfPidFile($currPid);
+        $this->reset();
         swoole_event_wait();
     }
 
