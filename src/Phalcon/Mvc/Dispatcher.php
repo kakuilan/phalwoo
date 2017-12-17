@@ -31,7 +31,7 @@ class Dispatcher extends PhDispatcher {
         try {
             yield $handler = $this->_dispatch();
         }catch (\Exception $e) {
-            if($this->{"_handleException"}($e) === false) {
+            if($this->_handleException($e) === false) {
                 return false;
             }
             throw $e;
@@ -54,7 +54,7 @@ class Dispatcher extends PhDispatcher {
 
         $dependencyInjector = $this->_dependencyInjector;
         if (!is_object($dependencyInjector)) {
-            $this->{'_throwDispatchException'}('A dependency injection container is required to access related dispatching services', self::EXCEPTION_NO_DI);
+            $this->_throwDispatchException('A dependency injection container is required to access related dispatching services', self::EXCEPTION_NO_DI);
             return false;
         }
 
@@ -84,7 +84,7 @@ class Dispatcher extends PhDispatcher {
              * Throw an exception after 256 consecutive forwards
              */
             if ($numberDispatches == 256) {
-                $this->{'_throwDispatchException'}('Dispatcher has detected a cyclic routing causing stability problems', self::EXCEPTION_CYCLIC_ROUTING);
+                $this->_throwDispatchException('Dispatcher has detected a cyclic routing causing stability problems', self::EXCEPTION_CYCLIC_ROUTING);
                 break;
             }
 
@@ -130,7 +130,7 @@ class Dispatcher extends PhDispatcher {
              * If the service can be loaded we throw an exception
              */
             if (!$hasService) {
-                $status = $this->{'_throwDispatchException'}($handlerClass . ' handler class cannot be loaded', self::EXCEPTION_HANDLER_NOT_FOUND);
+                $status = $this->_throwDispatchException($handlerClass . ' handler class cannot be loaded', self::EXCEPTION_HANDLER_NOT_FOUND);
                 if ($status === false) {
 
                     /*
@@ -158,7 +158,7 @@ class Dispatcher extends PhDispatcher {
 
 
             if (!is_object($handler)) {
-                $status = $this->{'_throwDispatchException'}('Invalid handler returned from the services container', self::EXCEPTION_INVALID_HANDLER);
+                $status = $this->_throwDispatchException('Invalid handler returned from the services container', self::EXCEPTION_INVALID_HANDLER);
                 if ($status === false) {
                     if ($this->_finished === false) {
                         continue;
@@ -178,7 +178,7 @@ class Dispatcher extends PhDispatcher {
                 /*
                  * An invalid parameter variable was passed throw an exception
                  */
-                $status = $this->{'_throwDispatchException'}('Action parameters must be an Array', self::EXCEPTION_INVALID_PARAMS);
+                $status = $this->_throwDispatchException('Action parameters must be an Array', self::EXCEPTION_INVALID_PARAMS);
                 if ($status === false) {
                     if ($this->_finished === false) {
                         continue;
@@ -212,7 +212,7 @@ class Dispatcher extends PhDispatcher {
                 /*
                  * Try to throw an exception when an action isn't defined on the object
                  */
-                $status = $this->{"_throwDispatchException"}("Action '" . $actionName . "' was not found on handler '" . $handlerName . "'", self::EXCEPTION_ACTION_NOT_FOUND);
+                $status = $this->_throwDispatchException("Action '" . $actionName . "' was not found on handler '" . $handlerName . "'", self::EXCEPTION_ACTION_NOT_FOUND);
                 if ($status === false) {
                     if ($this->_finished === false) {
                         continue;
@@ -321,15 +321,15 @@ class Dispatcher extends PhDispatcher {
             try {
                 // We update the latest value produced by the latest handler
                 $this->_returnedValue = yield $this->callActionMethod($handler, $actionMethod, $params);
-			} catch (\Exception $e) {
-                if ($this->{"_handleException"}($e) === false) {
+            } catch (\Exception $e) {
+                if ($this->_handleException($e) === false) {
                     if ($this->_finished === false) {
                         continue;
                     }
-				} else {
+                } else {
                     throw $e;
                 }
-			}
+            }
 
             // Calling afterExecuteRoute
             if(is_object($eventsManager)) {
@@ -368,6 +368,7 @@ class Dispatcher extends PhDispatcher {
 
         return $handler;
     }
+
 
 
 
