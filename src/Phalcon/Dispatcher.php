@@ -780,7 +780,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      *
      * @throws \Phalcon\Exception
      */
-    public function forward($forward) {
+    public function forward(array $forward) {
         $namespaceName = $controllerName = $params = $actionName = $taskName = null;
 
         if($this->_isControllerInitialize === true) {
