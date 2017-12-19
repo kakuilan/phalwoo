@@ -118,6 +118,8 @@ class Redis {
         $this->id = $id;
         $promise = new Promise();
         switch ($this->mode) {
+
+            //异步连接
             case ServerConst::MODE_ASYNC : {
                 $this->db = new \swoole_redis();
                 $this->db->on("close", function(){
@@ -171,6 +173,7 @@ class Redis {
                 break;
             }
 
+            //同步连接
             case ServerConst::MODE_SYNC : {
                 $this->link = new \Redis();
                 try {
@@ -182,8 +185,8 @@ class Redis {
                             'errMsg'    => $this->link->getLastError(),
                         ]);
                     }
-                    if( isset($this->conf['pwd']) ) {
-                        $this->link->auth($this->conf['pwd']);
+                    if( isset($this->conf['auth']) && !empty($this->conf['auth'])) {
+                        $this->link->auth($this->conf['auth']);
                     }
                     if($this->conf['prefix']) $this->link->setOption(\Redis::OPT_PREFIX, $this->conf['prefix']);
                     $this->link->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
@@ -192,12 +195,13 @@ class Redis {
                         'code'  => ServerConst::ERR_SUCCESS
                     ]);
                 }catch (\RedisException $e) {
-                    SwooleServer::getLogger()->error("SYNC Redis Connect Failed {$this->id}");
-                    $promise->resolve([
+                    $proRes = [
                         'code'      => ServerConst::ERR_REDIS_CONNECT_FAILED,
                         'errCode'   => $e->getCode(),
                         'errMsg'    => $e->getMessage(),
-                    ]);
+                    ];
+                    SwooleServer::getLogger()->error("SYNC Redis Connect Failed {$this->id}", $proRes);
+                    $promise->resolve($proRes);
                 }
 
                 break;
@@ -224,6 +228,8 @@ class Redis {
         //echo " redis _call mode:$this->mode \r\n";
 
         switch ($this->mode) {
+
+            //异步
             case ServerConst::MODE_ASYNC : {
                 $this->inPool();
                 $timeId = swoole_timer_after($this->timeout, function() use ($promise){
@@ -273,6 +279,7 @@ class Redis {
                 break;
             }
 
+            //同步
             case ServerConst::MODE_SYNC : {
                 $result = call_user_func_array([$this->link, $name], $arguments);
                 if( $result === false ) {
