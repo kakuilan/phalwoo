@@ -11,7 +11,8 @@
 namespace Lkk\Phalwoo\Phalcon\Mvc;
 
 use Phalcon\Mvc\DispatcherInterface;
-use Phalcon\Mvc\Dispatcher\Exception;
+//use Phalcon\Mvc\Dispatcher\Exception;
+use Exception;
 use Phalcon\Events\ManagerInterface;
 use Phalcon\Http\ResponseInterface;
 use Phalcon\Mvc\ControllerInterface;
@@ -52,7 +53,7 @@ class Dispatcher extends BaseDispatcher implements DispatcherInterface {
      * Sets the default controller suffix
      * @param string $controllerSuffix
      */
-    public function setControllerSuffix(string $controllerSuffix) {
+    public function setControllerSuffix($controllerSuffix) {
         $this->_handlerSuffix = $controllerSuffix;
     }
 
@@ -61,7 +62,7 @@ class Dispatcher extends BaseDispatcher implements DispatcherInterface {
      * Sets the default controller name
      * @param string $controllerName
      */
-    public function setDefaultController(string $controllerName) {
+    public function setDefaultController($controllerName) {
         $this->_defaultHandler = $controllerName;
     }
 
@@ -70,7 +71,7 @@ class Dispatcher extends BaseDispatcher implements DispatcherInterface {
      * Sets the controller name to be dispatched
      * @param string $controllerName
      */
-    public function setControllerName(string $controllerName) {
+    public function setControllerName($controllerName) {
         $this->_handlerName = $controllerName;
     }
 
@@ -118,15 +119,17 @@ class Dispatcher extends BaseDispatcher implements DispatcherInterface {
      * @return bool
      * @throws Exception
      */
-    protected function _throwDispatchException(string $message, int $exceptionCode = 0) {
+    protected function _throwDispatchException($message, $exceptionCode = 0) {
         $dependencyInjector = $response = $exception = null;
 
         $dependencyInjector = $this->_dependencyInjector;
         if(!is_object($dependencyInjector)) {
-            throw new Exception(
+            $exception = new Exception(
                 "A dependency injection container is required to access the 'response' service",
                 BaseDispatcher::EXCEPTION_NO_DI
             );
+
+            return $this->displayException($exception);
         }
 
         $response = $dependencyInjector->getShared("response");
@@ -142,13 +145,14 @@ class Dispatcher extends BaseDispatcher implements DispatcherInterface {
         $exception = new Exception($message, $exceptionCode);
 
         if($this->_handleException($exception) === false) {
-            return false;
+            //return false;
         }
 
         /**
          * Throw the exception if it wasn't handled
          */
-        throw $exception;
+        //throw $exception;
+        return $this->displayException($exception);
     }
 
 
@@ -164,6 +168,7 @@ class Dispatcher extends BaseDispatcher implements DispatcherInterface {
                 return false;
             }
         }
+        return true;
     }
 
     /**
@@ -220,7 +225,7 @@ class Dispatcher extends BaseDispatcher implements DispatcherInterface {
      *
      * @param array $forward
      */
-    public function forward(array $forward) {
+    public function forward($forward) {
         $eventsManager = $this->_eventsManager;
         if(is_object($eventsManager)) {
             $eventsManager->fire("dispatch:beforeForward", $this, $forward);

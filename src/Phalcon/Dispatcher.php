@@ -10,6 +10,7 @@
 namespace Lkk\Phalwoo\Phalcon;
 
 use Exception;
+use Throwable;
 use Phalcon\DiInterface;
 use Phalcon\Di\InjectionAwareInterface;
 use Phalcon\DispatcherInterface;
@@ -19,6 +20,7 @@ use Phalcon\Exception as PhalconException;
 use Phalcon\FilterInterface;
 use Phalcon\Mvc\Model\Binder;
 use Phalcon\Mvc\Model\BinderInterface;
+use Lkk\Concurrent\Promise;
 
 /**
  * Phalcon\Dispatcher
@@ -124,9 +126,9 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      * Sets the default action suffix
      * @param string $actionSuffix
      */
-    public function setActionSuffix(string $actionSuffix) {
+    public function setActionSuffix($actionSuffix) {
         $this->_actionSuffix = $actionSuffix;
-	}
+    }
 
 
     /**
@@ -142,7 +144,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      * Sets the module where the controller is (only informative)
      * @param string $moduleName
      */
-    public function setModuleName(string $moduleName) {
+    public function setModuleName($moduleName) {
         $this->_moduleName = $moduleName;
     }
 
@@ -160,7 +162,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      * Sets the namespace where the controller class is
      * @param string $namespaceName
      */
-    public function setNamespaceName(string $namespaceName) {
+    public function setNamespaceName($namespaceName) {
         $this->_namespaceName = $namespaceName;
     }
 
@@ -178,7 +180,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      * Sets the default namespace
      * @param string $namespaceName
      */
-    public function setDefaultNamespace(string $namespaceName) {
+    public function setDefaultNamespace($namespaceName) {
         $this->_defaultNamespace = $namespaceName;
     }
 
@@ -196,7 +198,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      * Sets the default action name
      * @param string $actionName
      */
-    public function setDefaultAction(string $actionName) {
+    public function setDefaultAction($actionName) {
         $this->_defaultAction = $actionName;
     }
 
@@ -205,7 +207,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      * Sets the action name to be dispatched
      * @param string $actionName
      */
-    public function setActionName(string $actionName) {
+    public function setActionName($actionName) {
         $this->_actionName = $actionName;
     }
 
@@ -229,7 +231,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
             // Note: Important that we do not throw a "_throwDispatchException" call here. This is important
             // because it would allow the application to break out of the defined logic inside the dispatcher
             // which handles all dispatch exceptions.
-            throw new PhalconException("Parameters must be an Array");
+            $e = new PhalconException("Parameters must be an Array");
+            return $this->displayException($e);
         }
 
         $this->_params = $params;
@@ -329,7 +332,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      */
     public function getReturnedValue() {
         return $this->_returnedValue;
-	}
+    }
 
 
     /**
@@ -351,7 +354,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      * @param null $cache
      * @return $this
      */
-    public function setModelBinding(bool $value, $cache = null) {
+    public function setModelBinding($value, $cache = null) {
         if(is_string($cache)) {
             $dependencyInjector = $this->_dependencyInjector;
             $cache = $dependencyInjector->get($cache);
@@ -407,6 +410,46 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
 
 
     /**
+     * 显示异常
+     * @param $e
+     * @return bool
+     */
+    public function displayException($e) {
+        if(is_object($e)) {
+            $resp = "Error code: " . $e->getCode() . '<br>';
+            $resp .= "Error message: " . $e->getMessage() . '<br>';
+            $resp .= "Error file: " . $e->getFile() . '<br>';
+            $resp .= "Error fileline: " . $e->getLine() . '<br>';
+            $resp .= "Error trace: " . $e->getTraceAsString() . '<br>';
+        }else{
+            $resp = (string)$e;
+        }
+
+        $this->_finished = true;
+
+        $this->setReturnedValue($resp);
+        return false;
+    }
+
+
+    /**
+     * Dispatches a handle action taking into account the routing parameters
+     *
+     * @return object|bool
+     */
+    public function dispatch() {
+        $handler = $e = null;
+        try {
+            yield $handler = $this->_dispatch();
+        }catch (Throwable $e) {
+            return $this->displayException($e);
+        }
+
+        return $handler;
+    }
+
+
+    /**
      * Process the results of the router by calling into the appropriate controller action(s)
      * including any routing data or injected parameters.
      *
@@ -416,7 +459,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      *
      * @throws \Exception if any uncaught or unhandled exception occurs during the dispatcher process.
      */
-    public function dispatch() {
+    private function _dispatch() {
         $hasService= $hasEventsManager = false;
         $numberDispatches = 0;
         $value = $handler = $dependencyInjector = $namespaceName = $handlerName =
@@ -428,7 +471,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
         $dependencyInjector = $this->_dependencyInjector;
         if(!is_object($dependencyInjector)) {
             $this->_throwDispatchException("A dependency injection container is required to access related dispatching services", self::EXCEPTION_NO_DI);
-			return false;
+            return false;
         }
 
         $eventsManager = $this->_eventsManager;
@@ -461,9 +504,10 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                         return false;
                     }
                     // Otherwise, bubble Exception
-                    throw $e;
+                    //throw $e;
                 }
                 // Otherwise, user forwarded, continue
+                return $this->displayException($e);
             }
 
         }
@@ -473,7 +517,6 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
         $numberDispatches = 0;
         $actionSuffix = $this->_actionSuffix;
         $this->_finished = false;
-
         while (!$this->_finished) {
             $numberDispatches++;
 
@@ -492,13 +535,14 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                     if ($eventsManager->fire("dispatch:beforeDispatch", $this) === false || $this->_finished === false) {
                         continue;
                     }
-				} catch (Exception $e) {
+                } catch (Exception $e) {
                     if ($this->_handleException($e) === false || $this->_finished === false) {
                         continue;
                     }
 
-					throw $e;
-				}
+                    //throw $e;
+                    return $this->displayException($e);
+                }
 
             }
 
@@ -587,9 +631,10 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                 }catch (Exception $e) {
                     if($this->_handleException($e) === false || $this->_finished === false) {
                         $dependencyInjector->remove($handlerClass);
-						continue;
+                        continue;
                     }
-                    throw $e;
+                    //throw $e;
+                    return $this->displayException($e);
                 }
             }
 
@@ -598,14 +643,15 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                     // Calling "beforeExecuteRoute" as direct method
                     if($handler->beforeExecuteRoute($this) === false || $this->_finished === false) {
                         $dependencyInjector->remove($handlerClass);
-						continue;
+                        continue;
                     }
                 }catch (Exception $e) {
                     if($this->_handleException($e) === false || $this->_finished === false) {
                         $dependencyInjector->remove($handlerClass);
-						continue;
+                        continue;
                     }
-                    throw $e;
+                    //throw $e;
+                    return $this->displayException($e);
                 }
             }
 
@@ -635,7 +681,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                         if($this->_handleException($e) === false || $this->_finished === false) {
                             continue;
                         }
-                        throw $e;
+                        //throw $e;
+                        return $this->displayException($e);
                     }
                 }
 
@@ -651,7 +698,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                         if($this->_handleException($e) === false || $this->_finished === false) {
                             continue;
                         }
-                        throw $e;
+                        //throw $e;
+                        return $this->displayException($e);
                     }
                 }
             }
@@ -691,15 +739,19 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
 
             try {
                 // We update the latest value produced by the latest handler
-                $this->_returnedValue = $this->callActionMethod($handler, $actionMethod, $params);
+                //$this->_returnedValue = yield $this->callActionMethod($handler, $actionMethod, $params);
+                $this->_returnedValue = Promise::co(function () use($handler, $actionMethod, $params) {
+                    yield $this->callActionMethod($handler, $actionMethod, $params);
+                });
                 if($this->_finished === false) {
                     continue;
                 }
-            }catch (Exception $e) {
+            }catch (Throwable $e) {
                 if($this->_handleException($e) === false || $this->_finished === false) {
                     continue;
                 }
-                throw $e;
+                //throw $e;
+                return $this->displayException($e);
             }
 
             // Calling "dispatch:afterExecuteRoute" event
@@ -712,7 +764,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                     if($this->_handleException($e) === false || $this->_finished === false) {
                         continue;
                     }
-                    throw $e;
+                    //throw $e;
+                    return $this->displayException($e);
                 }
             }
 
@@ -726,7 +779,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                     if($this->_handleException($e) === false || $this->_finished === false) {
                         continue;
                     }
-                    throw $e;
+                    //throw $e;
+                    return $this->displayException($e);
                 }
             }
 
@@ -739,7 +793,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                     if($this->_handleException($e) === false || $this->_finished === false) {
                         continue;
                     }
-                    throw $e;
+                    //throw $e;
+                    return $this->displayException($e);
                 }
             }
 
@@ -756,7 +811,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                     return false;
                 }
                 // Otherwise, bubble Exception
-                throw $e;
+                //throw $e;
+                return $this->displayException($e);
             }
         }
 
@@ -780,7 +836,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      *
      * @throws \Phalcon\Exception
      */
-    public function forward(array $forward) {
+    public function forward($forward) {
         $namespaceName = $controllerName = $params = $actionName = $taskName = null;
 
         if($this->_isControllerInitialize === true) {
@@ -856,15 +912,22 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
         $namespaceName = $this->_namespaceName;
 
         // We don't camelize the classes if they are in namespaces
-        if(!memstr($handlerName, "\\")) {
-            $camelizedClass = camelize($handlerName);
+        //if(!memstr($handlerName, "\\")) {
+        if(stripos($handlerName, "\\")!==0) {
+            //$camelizedClass = camelize($handlerName);
+            if(stripos($handlerName, '_')===false) {
+                $camelizedClass = ucfirst($handlerName);
+            }else{
+                $camelizedClass = lcfirst(implode('', array_map('ucfirst', array_map('strtolower', explode('_', $handlerName)))));
+            }
         }else{
             $camelizedClass = $handlerName;
         }
 
         // Create the complete controller class name prepending the namespace
         if($namespaceName) {
-            if(ends_with($namespaceName, "\\")) {
+            //if(ends_with($namespaceName, "\\")) {
+            if(substr_compare($namespaceName, "\\", -strlen("\\")) === 0) {
                 $handlerClass = $namespaceName . $camelizedClass . $handlerSuffix;
             }else{
                 $handlerClass = $namespaceName . "\\" . $camelizedClass . $handlerSuffix;

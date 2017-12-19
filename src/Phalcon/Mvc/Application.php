@@ -270,11 +270,11 @@ class Application extends PhApp {
                              */
                             $view->render(
                                 $dispatcher->getControllerName(),
-								$dispatcher->getActionName(),
-								$dispatcher->getParams()
-							);
+                                $dispatcher->getActionName(),
+                                $dispatcher->getParams()
+                            );
 
-						}
+                        }
                     }
                 }
 
@@ -282,27 +282,27 @@ class Application extends PhApp {
                 /**
                  * Finish the view component (stop output buffering)
                  */
-				if ($implicitView === true) {
+                if ($implicitView === true) {
                     $view->finish();
-				}
+                }
 
 
-				if ($returnedResponse === true) {
+                if ($returnedResponse === true) {
 
                     /**
                      * We don't need to create a response because there is one already created
                      */
                     $response = $possibleResponse;
-				} else {
+                } else {
                     $response = $dependencyInjector->getShared("response");
-					if ($implicitView === true) {
+                    if ($implicitView === true) {
 
                         /**
                          * The content returned by the view is passed to the response service
                          */
                         $response->setContent($view->getContent());
-					}
-				}
+                    }
+                }
 
             }
 
@@ -313,18 +313,18 @@ class Application extends PhApp {
          */
         if (is_object($eventsManager)) {
             $eventsManager->fire("application:beforeSendResponse", $this, $response);
-		}
+        }
 
-		/**
+        /**
          * Headers and Cookies are automatically sent
          */
-		$response->sendHeaders();
-		$response->sendCookies();
+        $response->sendHeaders();
+        $response->sendCookies();
 
-		/**
+        /**
          * Return the response
          */
-		return $response;
+        return $response;
     }
 
 
