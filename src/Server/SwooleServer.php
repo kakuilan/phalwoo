@@ -518,6 +518,7 @@ class SwooleServer extends LkkService {
         $chkExts = self::checkExtensions();
         if(!$chkExts) exit(1);
 
+        $conf = self::getProperty('conf');
         $pidExis = file_exists(self::$pidFile);
         $masterIsAlive = false;
         $masterPid = $managerPid = 0;
@@ -562,6 +563,9 @@ class SwooleServer extends LkkService {
 
                 break;
             case 'stop' :
+                //停止自动热更新服务
+                AutoReload::writeSelfPidFile(0, $conf['inotify']['pid_file']);
+
                 if(!$binded) {
                     $msg = "Service $this->servName not running!!!\r\n";
                     echo $msg;
@@ -596,8 +600,8 @@ class SwooleServer extends LkkService {
                         continue;
                     }
                     echo("Service $this->servName stop success\r\n");
-                    //停止自动热更新服务
-                    AutoReload::setStop();
+                    AutoReload::writeSelfPidFile(0, $conf['inotify']['pid_file']);
+
                     break;
                 }
                 exit(0);

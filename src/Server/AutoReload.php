@@ -90,9 +90,13 @@ class AutoReload extends LkkService{
     /**
      * 写入自身pid到文件
      * @param int $pid
+     * @param string $file
+     * @return bool|int
      */
-    public static function writeSelfPidFile($pid=0) {
-        file_put_contents(self::$selfPidFile, $pid);
+    public static function writeSelfPidFile($pid=0, $file='') {
+        if(empty($file)) $file = self::$selfPidFile;
+        if(empty($file)) return false;
+        return file_put_contents($file, $pid);
     }
 
 
