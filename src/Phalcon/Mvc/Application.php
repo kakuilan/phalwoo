@@ -20,6 +20,7 @@ use Phalcon\Mvc\DispatcherInterface;
 use Phalcon\Mvc\Application\Exception;
 use Phalcon\Mvc\Router\RouteInterface;
 use Phalcon\Mvc\ModuleDefinitionInterface;
+use Lkk\Phalwoo\Server\SwooleServer;
 
 
 class Application extends PhApp {
@@ -216,23 +217,30 @@ class Application extends PhApp {
          */
         $controller = yield $dispatcher->dispatch();
 
+        //包含var_dump等debug调试信息
+        $debug = SwooleServer::isOpenDebug() ? ob_get_contents() : '';
+
         /**
          * Get the latest value returned by an action
          */
         $possibleResponse = $dispatcher->getReturnedValue();
 
+        $response =$dependencyInjector->getShared("response");
+        $isJson = $response->isJson();
+
         /**
          * Returning false from an action cancels the view
          */
-        if(is_bool($possibleResponse) && $possibleResponse===false) {
-            $response =$dependencyInjector->getShared("response");
+        if((is_bool($possibleResponse) && $possibleResponse===false) || $isJson) {
+            if($isJson) {
+                $response->setContent($debug . $response->getContent());
+            }
         }else{
             /**
              * Returning a string makes use it as the body of the response
              */
             if(is_string($possibleResponse)) {
-                $response = $dependencyInjector->getShared("response");
-                $response->setContent($possibleResponse);
+                $response->setContent($debug . $possibleResponse);
             }else{
                 /**
                  * Check if the returned object is already a response
@@ -300,7 +308,7 @@ class Application extends PhApp {
                         /**
                          * The content returned by the view is passed to the response service
                          */
-                        $response->setContent($view->getContent());
+                        $response->setContent($debug . $view->getContent());
                     }
                 }
 
