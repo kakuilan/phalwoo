@@ -10,17 +10,18 @@
 
 namespace Lkk\Phalwoo\Server;
 
-use Lkk\LkkService;
 use Lkk\Helpers\CommonHelper;
 use Lkk\Helpers\EncryptHelper;
 use Lkk\Helpers\ValidateHelper;
-use Lkk\Phalwoo\Server\Component\Log\SwooleLogger;
+use Lkk\LkkService;
+use Lkk\Phalwoo\Server\AutoReload;
+use Lkk\Phalwoo\Server\Component\Client\Table;
 use Lkk\Phalwoo\Server\Component\Log\Handler\AsyncStreamHandler;
+use Lkk\Phalwoo\Server\Component\Log\SwooleLogger;
+use Lkk\Phalwoo\Server\Component\Pool\Adapter as PoolAdapter;
+use Lkk\Phalwoo\Server\Component\Pool\PoolManager;
 use Phalcon\Di\FactoryDefault\Cli as CliDi;
 use Phalcon\Events\Manager as PhEventManager;
-use Lkk\Phalwoo\Server\Component\Pool\PoolManager;
-use Lkk\Phalwoo\Server\Component\Pool\Adapter as PoolAdapter;
-use Lkk\Phalwoo\Server\Component\Client\Table;
 
 class SwooleServer extends LkkService {
 
@@ -595,6 +596,8 @@ class SwooleServer extends LkkService {
                         continue;
                     }
                     echo("Service $this->servName stop success\r\n");
+                    //停止自动热更新服务
+                    AutoReload::setStop();
                     break;
                 }
                 exit(0);

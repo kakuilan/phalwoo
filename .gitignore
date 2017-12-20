@@ -2,3 +2,5 @@
 *.log
 vendor
 composer.lock
+_gsdata_
+.user.ini

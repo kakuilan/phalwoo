@@ -284,11 +284,11 @@ class AutoReload extends LkkService{
             swoole_timer_tick(200, function () use ($lastPid, $currPid){
                 $workPid = self::getSelfPid(); //被更新的运行时pid
                 if($workPid>0 && $workPid!=$currPid) {
-                    $msg = "reload exit: lastPid:[{$lastPid}] currPid:[{$currPid}] workPid:[{$workPid}]";
+                    $msg = "reloadService exit: lastPid:[{$lastPid}] currPid:[{$currPid}] workPid:[{$workPid}]";
                     self::log($msg);
                     die($msg ."\r\n");
                 }elseif ($workPid==0) { //停止
-                    $msg = "service stop: lastPid:[{$lastPid}] currPid:[{$currPid}] workPid:[{$workPid}]";
+                    $msg = "reloadService stop: lastPid:[{$lastPid}] currPid:[{$currPid}] workPid:[{$workPid}]";
                     self::log($msg);
                     die($msg ."\r\n");
                 }
@@ -312,7 +312,7 @@ class AutoReload extends LkkService{
     public function __destruct() {
         $currPid = getmypid();
         $workPid = self::getSelfPid();
-        $msg = "__destruct: currPid:[{$currPid}] workPid:[{$workPid}]";
+        $msg = "reloadService destruct: currPid:[{$currPid}] workPid:[{$workPid}]";
         self::log($msg);
 
         //在另一个进程重启
