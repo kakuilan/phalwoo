@@ -87,6 +87,12 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
 
 
     /**
+     * 返回结果是否json
+     * @var bool
+     */
+    protected $_isJson = false;
+
+    /**
      * Phalcon\Http\Response constructor
      *
      * @param mixed $content
@@ -434,6 +440,23 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
         return !empty($this->_file);
     }
 
+
+    /**
+     * 设置返回结果是否json
+     * @param bool $status
+     */
+    public function setJsonStatus($status=false) {
+        $this->_isJson = boolval($status);
+    }
+
+
+    /**
+     * 检查返回是否json数据
+     * @return bool
+     */
+    public function isJson() {
+        return $this->_isJson;
+    }
 
 
 }

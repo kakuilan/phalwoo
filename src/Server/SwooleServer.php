@@ -1118,6 +1118,26 @@ class SwooleServer extends LkkService {
     }
 
 
+    /**
+     * 是否开启调试
+     * @return bool
+     */
+    final public static function isOpenDebug() {
+        $conf = self::getProperty('conf');
+        return $conf['open_debug'] ?? : false;
+    }
+
+
+    /**
+     * 是否开启日志
+     * @return bool
+     */
+    final public static function isOpenLoger() {
+        $conf = self::getProperty('conf');
+        return $conf['open_loger'] ?? : false;
+    }
+
+
 
 
 }
