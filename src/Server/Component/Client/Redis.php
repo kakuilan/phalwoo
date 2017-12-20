@@ -123,7 +123,7 @@ class Redis {
             case ServerConst::MODE_ASYNC : {
                 $this->db = new \swoole_redis();
                 $this->db->on("close", function(){
-                    SwooleServer::getLogger()->error("ASYNC Redis Close connection {$this->id}");
+                    SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error("ASYNC Redis Close connection {$this->id}");
                     $this->connect($this->id);
                 });
                 $timeId = swoole_timer_after($timeout, function() use ($promise){
@@ -141,7 +141,7 @@ class Redis {
                                 'errCode'   => $client->errCode,
                                 'errMsg'    => $client->errMsg,
                             ];
-                            SwooleServer::getLogger()->error("ASYNC Redis Connect Failed {$this->id}", $proRes);
+                            SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error("ASYNC Redis Connect Failed {$this->id}", $proRes);
                             $promise->resolve($proRes);
                             return;
                         }
@@ -154,7 +154,7 @@ class Redis {
                                         'errCode'   => $client->errCode,
                                         'errMsg'    => $client->errMsg,
                                     ];
-                                    SwooleServer::getLogger()->error("ASYNC Redis Auth Failed {$this->id}", $proRes);
+                                    SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error("ASYNC Redis Auth Failed {$this->id}", $proRes);
                                     $promise->resolve($proRes);
                                     return;
                                 }
@@ -200,7 +200,7 @@ class Redis {
                         'errCode'   => $e->getCode(),
                         'errMsg'    => $e->getMessage(),
                     ];
-                    SwooleServer::getLogger()->error("SYNC Redis Connect Failed {$this->id}", $proRes);
+                    SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error("SYNC Redis Connect Failed {$this->id}", $proRes);
                     $promise->resolve($proRes);
                 }
 
@@ -265,7 +265,7 @@ class Redis {
                             'errMsg'    => $client->errMsg,
                             'arguments' => $arguments,
                         ];
-                        SwooleServer::getLogger()->error("ASYNC Redis Call Failed {$this->id}", $proRes);
+                        SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error("ASYNC Redis Call Failed {$this->id}", $proRes);
                         $promise->resolve($proRes);
                         return;
                     }
