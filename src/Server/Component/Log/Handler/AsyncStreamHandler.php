@@ -66,8 +66,8 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
         $this->useLocking = $useLocking;
 
         $conf = SwooleServer::getProperty('conf');
-        $this->maxFileSize = $conf['file_size'] ?? SwooleLogger::$maxFileSize;
-        $this->maxFileNum = $conf['max_files'] ?? SwooleLogger::$maxFileNum;
+        $this->maxFileSize = $conf['sys_log']['file_size'] ?? SwooleLogger::$maxFileSize;
+        $this->maxFileNum = $conf['sys_log']['max_files'] ?? SwooleLogger::$maxFileNum;
         $this->maxRecords = SwooleLogger::$maxRecords;
 
         $this->createDir();
@@ -319,6 +319,3 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
 
 
 }
-
-
-
