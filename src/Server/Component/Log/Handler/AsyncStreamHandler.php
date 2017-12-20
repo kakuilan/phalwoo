@@ -14,6 +14,8 @@ use Monolog\Logger;
 use Monolog\Handler\AbstractProcessingHandler;
 use Lkk\Phalwoo\Server\Component\Log\SwooleLogger;
 use Lkk\Phalwoo\Server\SwooleServer;
+use Lkk\Helpers\ArrayHelper;
+use Lkk\Helpers\DirectoryHelper;
 
 /**
  * Stores to any stream resource
@@ -33,6 +35,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
 
     protected $maxFileSize = 0;
     protected $maxRecords = 0;
+    protected $maxFileNum = 0;
     protected $writeBlocks = 50; //每次写入多少条
     protected $recordPools = []; //日志消息池,待转入recordBuffers
     protected $recordBuffers = []; //日志消息,待写入文件
@@ -62,7 +65,9 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
         $this->filePermission = $filePermission;
         $this->useLocking = $useLocking;
 
-        $this->maxFileSize = SwooleLogger::$maxFileSize;
+        $conf = SwooleServer::getProperty('conf');
+        $this->maxFileSize = $conf['file_size'] ?? SwooleLogger::$maxFileSize;
+        $this->maxFileNum = $conf['max_files'] ?? SwooleLogger::$maxFileNum;
         $this->maxRecords = SwooleLogger::$maxRecords;
 
         $this->createDir();
@@ -193,9 +198,54 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
                 if(file_exists($filename) && filesize($filename) >= $logger->maxFileSize){
                     $backupFile = $logger->logDir . '/' . basename($filename) . date('.YmdHis.') .'bak';
                     rename($filename, $backupFile);
+
+                    $this->keepLogFiles();
                 }
             }, FILE_APPEND);
 
+        }
+
+        return true;
+    }
+
+
+    /**
+     * 保持日志文件(日志文件数量检查,删除旧的日志文件)
+     * @return bool
+     */
+    private function keepLogFiles() {
+        $files = DirectoryHelper::getFileTree($this->logDir, 'file');
+        if(empty($files)) return false;
+
+        $baseFile = pathinfo($this->url)['filename'];
+        $baseName = pathinfo($this->url)['basename'];
+
+        $arr = [];
+        rsort($files, SORT_NATURAL);
+        foreach ($files as $file) {
+            $tmpBase = basename($file);
+            if($baseName==$tmpBase) {
+                continue;
+            }
+            if(mb_stripos($tmpBase, $baseFile)===0) {
+                $item = [
+                    'file' => $file,
+                    'size' => filesize($file),
+                    'time' => filemtime($file),
+                ];
+
+                array_push($arr, $item);
+            }
+        }
+
+        $arr = ArrayHelper::arraySort($arr, 'time', 'DESC');
+        $logNum = 0;
+        foreach ($arr as $k=>$item) {
+            $logNum++;
+            if($logNum > $this->maxFileNum) {
+                unlink($item['file']);
+                unset($arr[$k]);
+            }
         }
 
         return true;
