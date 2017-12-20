@@ -277,6 +277,7 @@ class AutoReload extends LkkService{
         $lastPid = self::getSelfPid();
 
         self::writeSelfPidFile($currPid);
+        SwooleServer::setProcessTitle(self::$prcessTitle);
         swoole_timer_after(1000, function () use ($lastPid, $currPid) {
             $msg = "timer_after: lastPid:[{$lastPid}] currPid:[{$currPid}]";
             self::log($msg);
