@@ -27,6 +27,7 @@ class AutoReload extends LkkService{
     protected $watchFiles = [];
 
     //热更新守护进程pid文件
+    public static $defaultName = 'reload';
     public static $prcessTitle = 'phalwoo_inotify';
     public static $selfPidFile;
     public static $selfLogFile;
@@ -52,7 +53,7 @@ class AutoReload extends LkkService{
     public static function setSelfPidPath($path='') {
         $dir = dirname($path);
         if(!CommonHelper::isReallyWritable($dir)) {
-            self::$selfPidFile = '/tmp/'.self::$prcessTitle.'.pid';
+            self::$selfPidFile = '/tmp/'.self::$defaultName.'.pid';
         }else{
             self::$selfPidFile = $path;
         }
@@ -68,7 +69,7 @@ class AutoReload extends LkkService{
     public static function setSelfLogPath($path='') {
         $dir = dirname($path);
         if(!CommonHelper::isReallyWritable($dir)) {
-            self::$selfPidFile = '/tmp/'.self::$prcessTitle.'.log';
+            self::$selfPidFile = '/tmp/'.self::$defaultName.'.log';
         }else{
             self::$selfLogFile = $path;
         }
@@ -101,6 +102,24 @@ class AutoReload extends LkkService{
      */
     public static function getSelfPid() {
         return file_exists(self::$selfPidFile) ? intval(file_get_contents(self::$selfPidFile)) : 0;
+    }
+
+
+    /**
+     * 设置进程标题
+     * @param string $title
+     */
+    public static function setPrcessTitle($title='') {
+        if(is_string($title) && !empty($title)) self::$prcessTitle = $title;
+    }
+
+
+    /**
+     * 获取进程标题
+     * @return string
+     */
+    public static function getPrcessTitle() {
+        return self::$prcessTitle;
     }
 
 
