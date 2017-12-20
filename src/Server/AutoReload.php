@@ -287,10 +287,23 @@ class AutoReload extends LkkService{
                     $msg = "reload exit: lastPid:[{$lastPid}] currPid:[{$currPid}] workPid:[{$workPid}]";
                     self::log($msg);
                     die($msg ."\r\n");
+                }elseif ($workPid==0) { //停止
+                    $msg = "service stop: lastPid:[{$lastPid}] currPid:[{$currPid}] workPid:[{$workPid}]";
+                    self::log($msg);
+                    die($msg ."\r\n");
                 }
             });
         });
     }
+
+
+    /**
+     * 停止
+     */
+    public static function setStop() {
+        self::writeSelfPidFile(0);
+    }
+
 
 
     /**
