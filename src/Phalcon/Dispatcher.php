@@ -21,6 +21,7 @@ use Phalcon\FilterInterface;
 use Phalcon\Mvc\Model\Binder;
 use Phalcon\Mvc\Model\BinderInterface;
 use Lkk\Concurrent\Promise;
+use Lkk\Phalwoo\Server\SwooleServer;
 
 /**
  * Phalcon\Dispatcher
@@ -415,14 +416,18 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      * @return bool
      */
     public function displayException($e) {
-        if(is_object($e)) {
-            $resp = "Error code: " . $e->getCode() . '<br>';
-            $resp .= "Error message: " . $e->getMessage() . '<br>';
-            $resp .= "Error file: " . $e->getFile() . '<br>';
-            $resp .= "Error fileline: " . $e->getLine() . '<br>';
-            $resp .= "Error trace: " . $e->getTraceAsString() . '<br>';
+        if(SwooleServer::isOpenDebug()) {
+            if(is_object($e)) {
+                $resp = "Error code: " . $e->getCode() . '<br>';
+                $resp .= "Error message: " . $e->getMessage() . '<br>';
+                $resp .= "Error file: " . $e->getFile() . '<br>';
+                $resp .= "Error fileline: " . $e->getLine() . '<br>';
+                $resp .= "Error trace: " . $e->getTraceAsString() . '<br>';
+            }else{
+                $resp = (string)$e;
+            }
         }else{
-            $resp = (string)$e;
+            $resp = 'Sorry,server has error!';
         }
 
         $this->_finished = true;
