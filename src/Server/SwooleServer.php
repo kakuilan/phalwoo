@@ -1124,7 +1124,7 @@ class SwooleServer extends LkkService {
      */
     final public static function isOpenDebug() {
         $conf = self::getProperty('conf');
-        return $conf['open_debug'] ?? : false;
+        return $conf['open_debug'] ?? false;
     }
 
 
@@ -1134,7 +1134,7 @@ class SwooleServer extends LkkService {
      */
     final public static function isOpenLoger() {
         $conf = self::getProperty('conf');
-        return $conf['open_loger'] ?? : false;
+        return $conf['open_loger'] ?? false;
     }
 
 
