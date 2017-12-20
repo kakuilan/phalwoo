@@ -215,7 +215,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
      */
     private function keepLogFiles() {
         $files = DirectoryHelper::getFileTree($this->logDir, 'file');
-        if(empty($files)) return false;
+        if(empty($files) || $this->maxFileNum<=0) return false;
 
         $baseFile = pathinfo($this->url)['filename'];
         $baseName = pathinfo($this->url)['basename'];
