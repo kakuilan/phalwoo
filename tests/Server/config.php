@@ -9,12 +9,21 @@
 
 
 return [
-    'server_name' => 'Kserver',
-    'server_vers' => '0.0.1',
-    'pid_dir' => '/tmp/',
+    'server_name'   => 'KSS',
+    'server_vers'   => '0.0.0.1',
+    'pid_dir'       => '/tmp/pids' .DS,
+    'open_debug'    => true, //是否打开调试
+    'open_loger'    => true, //是否打开运行日志
 
     //是否热更新服务代码,需inotify扩展
-    'server_reload' => false,
+    'server_reload' => true,
+    'inotify' => [
+        'pid_file' => '/tmp/pids' .DS .'inotify.pid',
+        'log_file' => '/tmp/logs' .DS .'inotify.log',
+        //监控的目录
+        'watch_dir' => [
+        ],
+    ],
 
     //http服务监听
     'http_server' => [
@@ -22,10 +31,26 @@ return [
         'port' => 6666, //6666
     ],
 
-    //本系统日志,强制开启
+    //本系统运行日志
     'sys_log' => [
-        'name' => 'kslog', //日志名
-        'file' => '/tmp/kslog.log', //日志文件路径
+        'name' => 'kss', //日志名
+        'file' => '/tmp/logs/ksslog.log', //日志文件路径
+        'file_size' => 20971520, //日志文件大小限制,20M
+        'max_files' => 10, //要保留的日志文件的最大数量,默认是零,即,无限个文件
+        'slow_request' => 10, //慢请求,毫秒
+    ],
+
+    //xhprof性能日志
+    'xhprof_enable' => false, //是否开启xhprof
+    'xhprof_ratio' => 2, //取样概率,1/N
+
+    //pv访问次数记录
+    'pv' => [
+        //每日真实pv的redis缓存key
+        'day_real_pv' => 'dayRealPv',
+        //每日有效pv的redis缓存key
+        'day_vali_pv' => 'dayValiPv',
+        'times' => 10000, //TODO 每1W次更新数据表,每天23.55再入库
     ],
 
     //服务配置
@@ -51,7 +76,7 @@ return [
         //Listen队列长度
         'backlog' => 128,
         //指定swoole错误日志文件
-        'log_file' => '/tmp/swoole.log',
+        'log_file' => '/tmp/logs/swoole.log',
         //日志级别
         'log_level' => 0,
         //启用心跳检测,每隔N秒轮循一次
@@ -82,86 +107,6 @@ return [
 
     //定时任务
     'timer_tasks' => [
-        [
-            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
-            'message' => [
-                'title' => 'timerTest',
-                'callback' => ['\Tests\Server\Task','dumpTest'],
-                'params' => ['timerTest'],
-            ],
-            'run_interval_time' => 1,
-        ],
-        [
-            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
-            'message' => [
-                'title' => 'cronTimer',
-                'callback' => ['\Tests\Server\Task','crontTimerTest'],
-                'params' => ['cronTimer'],
-            ],
-            'run_crontab_time' => '*/1 * * * *',
-        ],
-        [
-            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
-            'message' => [
-                'title' => 'onceTimer',
-                'callback' => ['\Tests\Server\Task','onceTimerTest'],
-                'params' => ['onceTimer'],
-            ],
-            'run_interval_time' => '2017-09-03 14:13:01',
-        ],
-        [
-            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
-            'message' => [
-                'title' => 'sessionTest',
-                'callback' => ['\Tests\Server\Task','sessionTest'],
-                'params' => [],
-            ],
-            'run_interval_time' => 0.4,
-        ],
     ],
-
-
-    //连接池配置
-    /*********************** Pool Config Start ***********************/
-    'pool'  => [
-        /**
-         * MySQL 连接池
-         */
-        'mysql_master' => [
-            'type'  => 'mysql',                 // 连接池类型
-            'size'  => 40,                       // 连接池大小
-            'table_prefix'  => '',          //表前缀
-            'charset'   => 'utf8',              //字符集
-
-            'args'  => [                        // 连接参数
-                'host'      => '127.0.0.1',     // 主机名
-                'port'      => 3306,            // 端口号
-                'user'      => 'root',          // 用户名
-                'password'  => 'root',          // 密码
-                'database'  => 'test',          // 数据库名称
-                'open_log'  => true,
-                'slow_query' => 20, //慢查询20毫秒
-            ]
-
-        ],
-
-        /**
-         * Redis 连接池
-         */
-        'redis_master' => [
-            'type'  => 'redis',                 // 连接池类型
-            'size' => 2,                        // 默认为 1 连接, 无需设置
-
-            'args'  => [
-                'host'      => '127.0.0.1',     // 主机名
-                'port'      => 6379,            // 端口号
-                'auth'      => null,            // 口令
-                'select'    => 0,               // 库编号
-                'prefix'    => 't:',            // 前缀
-            ]
-        ],
-    ],
-    /*********************** Pool Config End ***********************/
-
 
 ];
