@@ -107,6 +107,84 @@ return [
 
     //定时任务
     'timer_tasks' => [
+        [
+            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
+            'message' => [
+                'title' => 'timerTest',
+                'callback' => ['\Tests\Server\Task','dumpTest'],
+                'params' => ['timerTest'],
+            ],
+            'run_interval_time' => 1,
+        ],
+        [
+            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
+            'message' => [
+                'title' => 'cronTimer',
+                'callback' => ['\Tests\Server\Task','crontTimerTest'],
+                'params' => ['cronTimer'],
+            ],
+            'run_crontab_time' => '*/1 * * * *',
+        ],
+        [
+            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
+            'message' => [
+                'title' => 'onceTimer',
+                'callback' => ['\Tests\Server\Task','onceTimerTest'],
+                'params' => ['onceTimer'],
+            ],
+            'run_interval_time' => '2017-09-03 14:13:01',
+        ],
+        [
+            'type' => \Lkk\Phalwoo\Server\ServerConst::SERVER_TASK_TIMER,
+            'message' => [
+                'title' => 'sessionTest',
+                'callback' => ['\Tests\Server\Task','sessionTest'],
+                'params' => [],
+            ],
+            'run_interval_time' => 0.4,
+        ],
     ],
+
+    //连接池配置
+    /*********************** Pool Config Start ***********************/
+    'pool'  => [
+        /**
+         * MySQL 连接池
+         */
+        'mysql_master' => [
+            'type'  => 'mysql',                 // 连接池类型
+            'size'  => 40,                       // 连接池大小
+            'table_prefix'  => '',          //表前缀
+            'charset'   => 'utf8',              //字符集
+
+            'args'  => [                        // 连接参数
+                'host'      => '127.0.0.1',     // 主机名
+                'port'      => 3306,            // 端口号
+                'user'      => 'root',          // 用户名
+                'password'  => 'root',          // 密码
+                'database'  => 'test',          // 数据库名称
+                'open_log'  => true,
+                'slow_query' => 20, //慢查询20毫秒
+            ]
+
+        ],
+
+        /**
+         * Redis 连接池
+         */
+        'redis_master' => [
+            'type'  => 'redis',                 // 连接池类型
+            'size' => 2,                        // 默认为 1 连接, 无需设置
+
+            'args'  => [
+                'host'      => '127.0.0.1',     // 主机名
+                'port'      => 6379,            // 端口号
+                'auth'      => null,            // 口令
+                'select'    => 0,               // 库编号
+                'prefix'    => 't:',            // 前缀
+            ]
+        ],
+    ],
+    /*********************** Pool Config End ***********************/
 
 ];
