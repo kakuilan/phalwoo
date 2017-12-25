@@ -492,7 +492,11 @@ class Request implements RequestInterface, InjectionAwareInterface {
         }
 
         if ($address === null) {
-            $address = $this->_swooleRequest->server['remote_addr'];
+            if(isset($this->_swooleRequest->header['x-real-ip'])) {
+                $address = $this->_swooleRequest->header['x-real-ip'];
+            }else{
+                $address = $this->_swooleRequest->server['remote_addr'];
+            }
         }
 
         if ($address) {
