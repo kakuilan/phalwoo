@@ -412,8 +412,8 @@ class Redis extends Adapter {
             }
         }
 
-        $denAgent = $this->_dependencyInjector->getShared('denAgent');
-        $id = $denAgent->makeSessionId();
+        $userAgent = $this->_dependencyInjector->getShared('userAgent');
+        $id = $userAgent->makeSessionId();
         $this->setId($id);
 
         return $this;

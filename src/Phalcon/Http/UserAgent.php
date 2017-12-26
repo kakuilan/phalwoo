@@ -4,7 +4,7 @@
  * User: kakuilan@163.com
  * Date: 2017/12/25
  * Time: 14:46
- * Desc:
+ * Desc: user-agent服务类
  */
 
 namespace Lkk\Phalwoo\Phalcon\Http;
@@ -23,7 +23,7 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
     private $agentUuid;
     private $sessionId;
     private $allowBench = false; //是否允许ab压测
-    private $agentFpName = '_afp'; //客户端(浏览器)指纹参数名称
+    private $agentFpName = 'uafp'; //客户端(浏览器)指纹参数名称
     private $agentFpValu = ''; //客户端(浏览器)指纹参数值
     private $tokenName = 'token'; //token参数名称
     private $tokenValu = ''; //token值
@@ -76,21 +76,38 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
         return $this->agentFpName;
     }
 
+
+    /**
+     * 设置token参数名
+     * @param string $str
+     */
     public function setTokenName(string $str) {
         if(!empty($str)) $this->tokenName = $str;
     }
 
 
+    /**
+     * 获取token参数名
+     * @return string
+     */
     public function getTokenName() {
         return $this->tokenName;
     }
 
 
+    /**
+     * 设置token校验函数
+     * @param callable $func
+     */
     public function setTokenFunc(callable $func) {
-        $this->tokenFunc = $func;
+        if(is_callable($func)) $this->tokenFunc = $func;
     }
 
 
+    /**
+     * 获取token值
+     * @return string
+     */
     public function getTokenValu() {
         return $this->tokenValu;
     }
