@@ -28,7 +28,8 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
     private $tokenName = 'token'; //token参数名称
     private $tokenValu = ''; //token值
     private $tokenFunc = null; //token验证函数
-    private $sessionHasFp = false; //sessionId是否包含指纹
+    private $sessionHasFp = false; //当前sessionId是否包含指纹
+    private $sidChange = false; //sessionId是否已变化
 
     //禁止的客户端关键词
     public static $denyAgentKeywords = ['crawler','spider','guzzle'];
@@ -141,12 +142,21 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
                 $lastSessionId = $this->getSessionIdFromCookie();
                 $res = boolval(substr($lastSessionId, 22, 1));
             }else{ //新的
-                $this->getAgentUuid();
+                $this->getAgentUuidReal();
                 $res = $this->sessionHasFp;
             }
         }
 
         return $res;
+    }
+
+
+    /**
+     * sessionId是否有改变
+     * @return bool
+     */
+    public function isSessionIdChange() {
+        return $this->sidChange;
     }
 
 
@@ -274,12 +284,18 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
                 return false;
             }else{
                 $lastHasFp = $this->isSessionHasFp($sessionValue);
-                $uuid = $lastHasFp ? $this->getAgentUuid() : $this->getAgentUuidNofp();
+                $uuid = $lastHasFp ? $this->getAgentUuidReal() : $this->getAgentUuidNofp();
+
+                //检查sessionId是否有变化
+                $this->sidChange = boolval($this->sessionHasFp === $lastHasFp);
 
                 if(substr($sessionValue, 23) !==$uuid) {
                     $this->setError('cookies的sessionId错误');
                     return false;
                 }
+
+                //检查sessionId是否有变化
+                $this->sidChange = boolval($this->sessionHasFp === $lastHasFp);
             }
 
         }
@@ -289,27 +305,11 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
 
 
     /**
-     * 获取agen的uuid
+     * 获取包含指纹的uuid
      * @return int
      */
-    public function getAgentUuid() {
-        if(is_null($this->agentUuid)) {
-            $arr = [];
-
-            $arr['agent-fingerprint'] = $this->agentFpValu;
-            $arr['host'] = $this->request->header['host'] ?? '';
-            $arr['user-agent'] = $this->request->header['user-agent'] ?? '';
-            $arr['accept-language'] = $this->request->header['accept-language'] ?? '';
-            $arr['accept-encoding'] = $this->request->header['accept-encoding'] ?? '';
-            $arr['dnt'] = $this->request->header['dnt'] ?? '';
-            $arr['connection'] = $this->request->header['connection'] ?? '';
-            ksort($arr);
-
-            $this->sessionHasFp = !empty($this->agentFpValu);
-            $this->agentUuid = EncryptHelper::murmurhash3_int(json_encode($arr), 13, true);
-        }
-
-        return $this->agentUuid;
+    public function getAgentUuidReal() {
+        return $this->_getAgentUuid(true);
     }
 
 
@@ -318,21 +318,37 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
      * @return int
      */
     public function getAgentUuidNofp() {
-        $arr = [];
-
-        $arr['agent-fingerprint'] = $this->agentFpValu;
-        $arr['host'] = $this->request->header['host'] ?? '';
-        $arr['user-agent'] = $this->request->header['user-agent'] ?? '';
-        $arr['accept-language'] = $this->request->header['accept-language'] ?? '';
-        $arr['accept-encoding'] = $this->request->header['accept-encoding'] ?? '';
-        $arr['dnt'] = $this->request->header['dnt'] ?? '';
-        $arr['connection'] = $this->request->header['connection'] ?? '';
-        ksort($arr);
-
-        $res = EncryptHelper::murmurhash3_int(json_encode($arr), 13, true);
-        return $res;
+        return $this->_getAgentUuid(false);
     }
 
+
+    /**
+     * 获取agen的uuid
+     * @param bool $hasFp
+     * @return mixed
+     */
+    private function _getAgentUuid($hasFp=true) {
+        $flag = intval($hasFp);
+        if($hasFp && empty($this->agentFpValu)) $flag = 0;
+        $this->sessionHasFp = !empty($this->agentFpValu);
+
+        if(is_null($this->agentUuid) || !isset($this->agentUuid[$flag])) {
+            $arr = [];
+
+            $arr['agent-fingerprint'] = $hasFp ? $this->agentFpValu : '';
+            $arr['host'] = $this->request->header['host'] ?? '';
+            $arr['user-agent'] = $this->request->header['user-agent'] ?? '';
+            $arr['accept-language'] = $this->request->header['accept-language'] ?? '';
+            $arr['accept-encoding'] = $this->request->header['accept-encoding'] ?? '';
+            $arr['dnt'] = $this->request->header['dnt'] ?? '';
+            $arr['connection'] = $this->request->header['connection'] ?? '';
+            ksort($arr);
+
+            $this->agentUuid[$flag] = EncryptHelper::murmurhash3_int(json_encode($arr), 13, true);
+        }
+
+        return $this->agentUuid[$flag];
+    }
 
 
     /**
@@ -341,7 +357,7 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
      */
     public function makeSessionId() {
         if(is_null($this->sessionId)) {
-            $uuid = $this->getAgentUuid();
+            $uuid = $this->getAgentUuidReal();
             $ip = $this->getIp();
             $rand = md5(uniqid($ip.microtime(true), true));
             $rand = substr($rand,8,16);
