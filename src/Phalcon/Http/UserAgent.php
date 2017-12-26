@@ -96,6 +96,8 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
 
 
     /**
+     * 设置swoole请求对象
+     * 须先设置setAgentFpName,setTokenName,setTokenFunc
      * @param \swoole_http_request $request
      */
     public function setSwRequest(\swoole_http_request $request) {
@@ -128,16 +130,20 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
 
     /**
      * 判断sessionID中是否包含指纹
+     * @param string $sessionId
      * @return bool
      */
-    public function isSessionHasFp() {
-        $res = false;
-        if(isset($this->request->cookie)) { //已有的session
-            $lastSessionId = $this->getSessionIdFromCookie();
-            $res = boolval(substr($lastSessionId, 22, 1));
-        }else{ //新的
-            $this->getAgentUuid();
-            $res = $this->sessionHasFp;
+    public function isSessionHasFp($sessionId='') {
+        if(!empty($sessionId)) { //传入值去判断
+            $res = boolval(substr($sessionId, 22, 1));
+        }else {
+            if(isset($this->request->cookie)) { //已有的session
+                $lastSessionId = $this->getSessionIdFromCookie();
+                $res = boolval(substr($lastSessionId, 22, 1));
+            }else{ //新的
+                $this->getAgentUuid();
+                $res = $this->sessionHasFp;
+            }
         }
 
         return $res;
@@ -155,8 +161,10 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
             $res = $this->swRequest->header['x-forwarded-for'];
         }elseif (isset($this->swRequest->header['client-ip'])) {
             $res = $this->swRequest->header['client-ip'];
-        }else{
+        }elseif (isset($this->swRequest->server['remote_addr'])) {
             $res = $this->swRequest->server['remote_addr'];
+        }else{
+            $res = '127.0.0.1';
         }
 
         return $res;
@@ -265,10 +273,10 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
                 $this->setError('cookies没有sessionId');
                 return false;
             }else{
-                $crypt = $this->_dependencyInjector->getShared('crypt');
-                $decryptedValue = $crypt->decryptBase64($sessionValue);
-                $uuid = $this->getAgentUuid();
-                if(substr($decryptedValue, 23) !==$uuid) {
+                $lastHasFp = $this->isSessionHasFp($sessionValue);
+                $uuid = $lastHasFp ? $this->getAgentUuid() : $this->getAgentUuidNofp();
+
+                if(substr($sessionValue, 23) !==$uuid) {
                     $this->setError('cookies的sessionId错误');
                     return false;
                 }
@@ -334,8 +342,7 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
     public function makeSessionId() {
         if(is_null($this->sessionId)) {
             $uuid = $this->getAgentUuid();
-            $ip = $this->swRequest->header['x_forwarded_for'] ??
-                ($this->swRequest->header['client_ip'] ?? ($this->swRequest->header['remote_addr'] ?? '127.0.0.1'));
+            $ip = $this->getIp();
             $rand = md5(uniqid($ip.microtime(true), true));
             $rand = substr($rand,8,16);
             $time = substr(time(), -6);
