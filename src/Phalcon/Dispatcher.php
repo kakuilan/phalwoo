@@ -416,17 +416,18 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      * @return bool
      */
     public function displayException($e) {
-        if(SwooleServer::isOpenDebug()) {
-            if(is_object($e)) {
-                $resp = "Error code: " . $e->getCode() . '<br>';
-                $resp .= "Error message: " . $e->getMessage() . '<br>';
-                $resp .= "Error file: " . $e->getFile() . '<br>';
-                $resp .= "Error fileline: " . $e->getLine() . '<br>';
-                $resp .= "Error trace: " . $e->getTraceAsString() . '<br>';
-            }else{
-                $resp = (string)$e;
-            }
+        if(is_object($e)) {
+            $resp = "Error code: " . $e->getCode() . '<br>';
+            $resp .= "Error message: " . $e->getMessage() . '<br>';
+            $resp .= "Error file: " . $e->getFile() . '<br>';
+            $resp .= "Error fileline: " . $e->getLine() . '<br>';
+            $resp .= "Error trace: " . $e->getTraceAsString() . '<br>';
         }else{
+            $resp = (string)$e;
+        }
+
+        if(!SwooleServer::isOpenDebug()) {
+            SwooleServer::getLogger()->error($resp);
             $resp = 'Sorry,server has error!';
         }
 
