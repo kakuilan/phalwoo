@@ -167,6 +167,8 @@ class View extends PhView {
             if ($renderLevel >= self::LEVEL_ACTION_VIEW) {
                 if (!isset($disabledLevels[self::LEVEL_ACTION_VIEW])) {
                     $this->_currentRenderLevel = self::LEVEL_ACTION_VIEW;
+                    //动作的视图模板
+                    if(SwooleServer::isOpenDebug()) $silence = false;
                     $this->_engineRender($engines, $renderView, $silence, $mustClean, $cache);
                 }
             }
@@ -266,7 +268,6 @@ class View extends PhView {
      * @param \Phalcon\Cache\BackendInterface $cache
      */
     protected function _engineRender($engines, $viewPath, $silence, $mustClean, BackendInterface $cache = null) {
-        $notExists = false;
         $renderLevel = $cacheLevel = 0;
         $key = $lifetime = $viewsDir = $basePath = $viewsDirPath =
         $viewOptions = $cacheOptions = $cachedView = $viewParams = $eventsManager =
@@ -377,6 +378,8 @@ class View extends PhView {
                         $eventsManager->fire("view:afterRenderView", $this);
                     }
                     break;
+                }elseif (!$silence && !SwooleServer::isOpenDebug()) {
+                    SwooleServer::getLogger()->error($viewEnginePath .' was not found');
                 }
 
                 $viewEnginePaths[] = $viewEnginePath;
