@@ -113,7 +113,7 @@ class Request implements RequestInterface, InjectionAwareInterface {
 
         $value = isset($source[$name]) ? $source[$name] : null;
 
-        if (!$value) {
+        if (is_null($value)) {
             return $defaultValue;
         }
 
