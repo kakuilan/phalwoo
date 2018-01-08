@@ -10,14 +10,13 @@
 
 namespace Lkk\Phalwoo\Phalcon\Mvc;
 
-use Phalcon\Mvc\DispatcherInterface;
-//use Phalcon\Mvc\Dispatcher\Exception;
 use Exception;
+use Throwable;
+use Lkk\Phalwoo\Phalcon\Dispatcher as BaseDispatcher;
 use Phalcon\Events\ManagerInterface;
 use Phalcon\Http\ResponseInterface;
 use Phalcon\Mvc\ControllerInterface;
-//use Phalcon\Dispatcher as BaseDispatcher;
-use Lkk\Phalwoo\Phalcon\Dispatcher as BaseDispatcher;
+use Phalcon\Mvc\DispatcherInterface;
 
 /**
  * Phalcon\Mvc\Dispatcher
@@ -158,10 +157,10 @@ class Dispatcher extends BaseDispatcher implements DispatcherInterface {
 
     /**
      * Handles a user exception
-     * @param Exception $exception
+     * @param Throwable $exception
      * @return bool
      */
-    protected function _handleException(Exception $exception) {
+    protected function _handleException(Throwable $exception) {
         $eventsManager = $this->_eventsManager;
         if(is_object($eventsManager)) {
             if($eventsManager->fire("dispatch:beforeException", $this, $exception) === false) {
