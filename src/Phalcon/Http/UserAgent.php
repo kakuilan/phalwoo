@@ -239,7 +239,7 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
         $ip = $this->getIp();
 
         //如果是内网,通过
-        if(stripos($ip,'127.')===0||stripos($ip,'10.')===0||stripos($ip,'192.')) {
+        if(stripos($ip,'127.')===0||stripos($ip,'10.')===0||stripos($ip,'192.')===0) {
             return true;
         }
 
