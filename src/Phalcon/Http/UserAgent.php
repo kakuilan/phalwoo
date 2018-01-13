@@ -24,9 +24,9 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
     private $sessionId;
     private $allowBench = false; //是否允许ab压测
     private $agentFpName = 'uafp'; //客户端(浏览器)指纹参数名称
-    private $agentFpValu = ''; //客户端(浏览器)指纹参数值
+    private $agentFpValue = ''; //客户端(浏览器)指纹参数值
     private $tokenName = 'token'; //token参数名称
-    private $tokenValu = ''; //token值
+    private $tokenValue = ''; //token值
     private $tokenFunc = null; //token验证函数
     private $sessionHasFp = false; //当前sessionId是否包含指纹
     private $sidChange = false; //sessionId是否已变化
@@ -78,6 +78,15 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
 
 
     /**
+     * 获取客户端指纹参数值
+     * @return string
+     */
+    public function getAgentFpValue() {
+        return $this->agentFpValue;
+    }
+
+
+    /**
      * 设置token参数名
      * @param string $str
      */
@@ -108,8 +117,8 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
      * 获取token值
      * @return string
      */
-    public function getTokenValu() {
-        return $this->tokenValu;
+    public function getTokenValue() {
+        return $this->tokenValue;
     }
 
 
@@ -124,8 +133,8 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
         $fpName = $this->getAgentFpName();
         $tkName = $this->getTokenName();
 
-        $this->agentFpValu = $this->request->get[$fpName] ?? ($this->request->post[$fpName] ?? ($this->request->cookie[$fpName] ?? ''));
-        $this->tokenValu = $this->request->get[$tkName] ?? ($this->request->post[$tkName] ?? ($this->request->cookie[$tkName] ?? ''));
+        $this->agentFpValue = $this->request->get[$fpName] ?? ($this->request->post[$fpName] ?? ($this->request->cookie[$fpName] ?? ''));
+        $this->tokenValue = $this->request->get[$tkName] ?? ($this->request->post[$tkName] ?? ($this->request->cookie[$tkName] ?? ''));
 
     }
 
@@ -250,8 +259,8 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
             if(!$this->checkCookie()) return false;
         }
 
-        if(!empty($this->tokenValu) && is_callable($this->tokenFunc)) {
-            if(!call_user_func_array($this->tokenFunc, [$this->tokenValu])) return false;
+        if(!empty($this->tokenValue) && is_callable($this->tokenFunc)) {
+            if(!call_user_func_array($this->tokenFunc, [$this->tokenValue])) return false;
         }
 
         return true;
@@ -346,13 +355,13 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
      */
     private function _getAgentUuid($hasFp=true) {
         $flag = intval($hasFp);
-        if($hasFp && empty($this->agentFpValu)) $flag = 0;
-        $this->sessionHasFp = !empty($this->agentFpValu);
+        if($hasFp && empty($this->agentFpValue)) $flag = 0;
+        $this->sessionHasFp = !empty($this->agentFpValue);
 
         if(is_null($this->agentUuid) || !isset($this->agentUuid[$flag])) {
             $arr = [];
 
-            $arr['agent-fingerprint'] = $hasFp ? $this->agentFpValu : '';
+            $arr['agent-fingerprint'] = $hasFp ? $this->agentFpValue : '';
             $arr['host'] = $this->request->header['host'] ?? '';
             $arr['user-agent'] = $this->request->header['user-agent'] ?? '';
             $arr['accept-language'] = $this->request->header['accept-language'] ?? '';
