@@ -73,7 +73,7 @@ class RedisQueue extends LkkRedisQueueService {
             'redisConf' => self::getDefultRedisCnf(),
             'transTime' => 30,
         ];
-        $key = md5($queueName . self::APP_WORKFLOW_QUEUE_NAME . json_encode($conf));
+        $key = md5($queueName . json_encode($conf));
 
         if(!isset(self::$queues[$key]) || empty(self::$queues[$key])) {
             $queue = new RedisQueue($conf);
@@ -107,8 +107,26 @@ class RedisQueue extends LkkRedisQueueService {
 
 
     /**
+     * 快速添加多个消息到工作流队列
+     * @param array $items 消息数组
+     * @param array $conf 配置
+     * @return array
+     */
+    public static function quickAddMultItem2WorkflowMq($items=[], $conf=[]) {
+        $queue = self::getQueueObject(self::APP_WORKFLOW_QUEUE_NAME, $conf);
+        $res = $queue->pushMulti($items);
+        $data = [
+            'result' => $res,
+            'error' => $queue->error,
+        ];
+
+        return $data;
+    }
+
+
+    /**
      * 快速添加单个消息到APP通知队列
-     * @param array $item 消息:例如['type'=>'msg', 'data'=>[]],type类型有msg站内信,sms短信,mail邮件,getui个推,other其他
+     * @param array $item 消息:例如['type'=>'msg', 'data'=>[]],type类型有msg站内信,mail邮件,sms短信,wechat微信
      * @param array $conf 配置
      * @return array
      */
