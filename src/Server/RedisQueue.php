@@ -70,7 +70,7 @@ class RedisQueue extends LkkRedisQueueService {
      */
     public static function getQueueObject($queueName, $conf=[]) {
         if(empty($conf)) $conf = [
-            'redisConf' => self::getDefultRedisCnf(),
+            'redisConf' => static::getDefultRedisCnf(),
             'transTime' => 30,
         ];
         $key = md5($queueName . json_encode($conf));
