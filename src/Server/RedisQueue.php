@@ -37,7 +37,7 @@ class RedisQueue extends LkkRedisQueueService {
 
 
     /**
-     * 获取默认的redis配置
+     * 获取默认的redis配置,子类可重写
      * @return array
      */
     public static function getDefultRedisCnf() {
