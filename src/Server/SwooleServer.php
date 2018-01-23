@@ -1089,7 +1089,7 @@ class SwooleServer extends LkkService {
         }
 
         $_SERVER['SCRIPT_NAME'] = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
-        $_SERVER['_request_uuid'] = self::makeRequestUuid($request);
+        //$_SERVER['_request_uuid'] = self::makeRequestUuid($request);
     }
 
 
