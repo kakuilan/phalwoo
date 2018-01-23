@@ -1009,6 +1009,15 @@ class Request implements RequestInterface, InjectionAwareInterface {
 
 
     /**
+     * 设置请求的uuid
+     * @param string $uuid
+     */
+    public function setRequestUuid($uuid='') {
+        if(!empty($uuid) && is_string($uuid)) $this->_requestUuid = $uuid;
+    }
+
+
+    /**
      * 设置请求处理耗时,毫秒
      * @param int $millisecond
      */
