@@ -63,6 +63,13 @@ class Redis {
 
 
     /**
+     * redis长连接id前缀
+     * @var
+     */
+    private $persistent_prefix = 'redisp_';
+
+
+    /**
      * Redis constructor.
      * @param $config       array       配置选项
      * @param $mode         int         模式(ServerConst中的MODE常量)
@@ -105,6 +112,11 @@ class Redis {
             default :
                 break;
         }
+    }
+
+
+    private function getPersistentId() {
+        return $this->persistent_prefix . $this->id;
     }
 
 
@@ -176,8 +188,9 @@ class Redis {
             //同步连接
             case ServerConst::MODE_SYNC : {
                 $this->link = new \Redis();
+                $persistentId = $this->getPersistentId();
                 try {
-                    $result = $this->link->pconnect($this->conf['host'], $this->conf['port'], $timeout);
+                    $result = $this->link->pconnect($this->conf['host'], $this->conf['port'], $timeout, $persistentId);
                     if( !$result ) {
                         $promise->resolve([
                             'code'      => ServerConst::ERR_REDIS_CONNECT_FAILED,
