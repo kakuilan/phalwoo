@@ -129,13 +129,11 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
      */
     public function setSwRequest(\swoole_http_request $request) {
         $this->swRequest = $request;
-
         $fpName = $this->getAgentFpName();
         $tkName = $this->getTokenName();
 
-        $this->agentFpValue = $this->request->get[$fpName] ?? ($this->request->post[$fpName] ?? ($this->request->cookie[$fpName] ?? ''));
-        $this->tokenValue = $this->request->get[$tkName] ?? ($this->request->post[$tkName] ?? ($this->request->cookie[$tkName] ?? ''));
-
+        $this->agentFpValue = $this->swRequest->get[$fpName] ?? ($this->swRequest->post[$fpName] ?? ($this->swRequest->cookie[$fpName] ?? ''));
+        $this->tokenValue = $this->swRequest->get[$tkName] ?? ($this->swRequest->post[$tkName] ?? ($this->swRequest->cookie[$tkName] ?? ''));
     }
 
 
