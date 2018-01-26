@@ -24,8 +24,7 @@
   },
   "require-dev": {
     "kakuilan/kphplib": "dev-master",
-    "phalcon/ide-stubs": "*",
-    "eaglewu/swoole-ide-helper": "dev-master"
+    "phalcon/ide-stubs": "*"
   },
   "autoload": {
     "psr-4": {
