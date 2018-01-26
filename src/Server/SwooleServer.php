@@ -698,6 +698,8 @@ class SwooleServer extends LkkService {
         $servCnf['daemonize'] = self::getDaemonize();
         $this->server->set($servCnf);
 
+        $_REQUEST = $_SESSION = $_COOKIE = $_FILES = $_POST = $_SERVER = $_GET = [];
+
         return $this;
     }
 
@@ -965,12 +967,12 @@ class SwooleServer extends LkkService {
         if ($request->server['request_uri'] == '/favicon.ico' || $request->server['path_info'] == '/favicon.ico') {
             $response->end();
             return false;
-        }elseif (preg_match('/(.css|.js|.gif|.png|.jpg|.jpeg|.ttf|.woff|.ico)$/i', $request->server['request_uri']) === 1) {
+        }elseif (preg_match('/(.css|.js|.gif|.png|.jpg|.jpeg|.ttf|.woff|.ico|.map|.json)$/i', $request->server['request_uri']) === 1) {
             $response->end();
             return false;
         }
 
-        $_REQUEST = $_SESSION = $_COOKIE = $_FILES = $_POST = $_SERVER = $_GET = [];
+        //$_REQUEST = $_SESSION = $_COOKIE = $_FILES = $_POST = $_SERVER = $_GET = [];
         //具体处理请求,留给子类去处理
 
         return true;
