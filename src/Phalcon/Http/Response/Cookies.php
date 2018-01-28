@@ -24,7 +24,11 @@ class Cookies extends PhalconCookies implements CookiesInterface, InjectionAware
 
     use HttpTrait;
 
+    //cookie配置
     protected $conf;
+
+    //已有的旧cookie
+    protected $_oldCookies = [];
 
 
     /**
@@ -119,14 +123,14 @@ class Cookies extends PhalconCookies implements CookiesInterface, InjectionAware
     /**
      * Gets a cookie from the bag
      *
-     * @param string $name
-     * @param bool $encrypt
+     * @param string $name 名称
+     * @param bool $encrypt 是否加密
      * @return \Phalcon\Http\CookieInterface
      */
     public function get($name, $encrypt=null) {
         $name = $this->getPrefixedName($name);
 
-        $cookie = $this->_cookies[$name] ?? null;
+        $cookie = $this->_oldCookies[$name] ?? null;
         if(!empty($cookie) && $cookie instanceof Cookie ) {
             return $cookie;
         }
@@ -158,7 +162,7 @@ class Cookies extends PhalconCookies implements CookiesInterface, InjectionAware
         if($encryption){
             $cookie->useEncryption($encryption);
         }
-        $this->_cookies[$name] = $cookie;
+        $this->_oldCookies[$name] = $cookie;
 
         return $cookie;
     }
@@ -198,8 +202,9 @@ class Cookies extends PhalconCookies implements CookiesInterface, InjectionAware
                 $cookie->send();
             }
 
-            $this->_cookies = [];
+            $this->_cookies = null;
         }
+        $this->_oldCookies = null;
 
         return true;
     }
@@ -216,5 +221,3 @@ class Cookies extends PhalconCookies implements CookiesInterface, InjectionAware
 
 
 }
-
-
