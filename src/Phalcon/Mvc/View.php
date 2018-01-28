@@ -22,6 +22,7 @@ use Lkk\Phalwoo\Server\SwooleServer;
 
 class View extends PhView {
 
+    protected $renderView;
 
     /**
      * Executes render process from dispatching data
@@ -169,6 +170,7 @@ class View extends PhView {
                     $this->_currentRenderLevel = self::LEVEL_ACTION_VIEW;
                     //动作的视图模板
                     if(SwooleServer::isOpenDebug()) $silence = false;
+                    $this->renderView = $renderView;
                     $this->_engineRender($engines, $renderView, $silence, $mustClean, $cache);
                 }
             }
@@ -378,7 +380,7 @@ class View extends PhView {
                         $eventsManager->fire("view:afterRenderView", $this);
                     }
                     break;
-                }elseif (!$silence && !SwooleServer::isOpenDebug()) {
+                }elseif (!SwooleServer::isOpenDebug() && stripos($viewEnginePath, $this->renderView)) {
                     SwooleServer::getLogger()->error($viewEnginePath .' was not found');
                 }
 
@@ -398,7 +400,11 @@ class View extends PhView {
             }
 
             if (!$silence) {
-                throw new Exception("View '" . $viewPath . "' was not found in any of the views directory");
+                $err  = "View '" . $viewPath . "' was not found in any of the views directory";
+                if(!SwooleServer::isOpenDebug()) {
+                    SwooleServer::getLogger()->error($err);
+                }
+                throw new Exception($err);
             }
         }
 
