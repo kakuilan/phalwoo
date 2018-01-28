@@ -175,6 +175,7 @@ class SwooleServer extends LkkService {
      */
     public function setLogger() {
         $this->logger = new SwooleLogger($this->conf['sys_log']['name'], [], []);
+        $this->logger->setRatio($this->conf['sys_log']['ratio']);
         $this->logger->setDefaultHandler($this->conf['sys_log']['file']);
     }
 

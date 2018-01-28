@@ -43,6 +43,12 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
     protected $isWriting = false; //是否正在写日志
 
     /**
+     * 日志写入概率,1/N
+     * @var int
+     */
+    protected $ratio = 1;
+
+    /**
      * @param resource|string $stream
      * @param int             $level          The minimum logging level at which this handler will be triggered
      * @param Boolean         $bubble         Whether the messages that are handled can bubble up the stack or not
@@ -177,7 +183,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
 
     protected function streamWrite($all=false) {
         //允许一个随机率可写,否则可能内存不足
-        $writeable = !$all || !$this->isWriting || mt_rand(0, 3)==1;
+        $writeable = !$all || !$this->isWriting || mt_rand(1, $this->ratio)==$this->ratio;
         if(!$writeable) return false;
 
         while (true) {
@@ -316,6 +322,14 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
     }
 
 
+    public function setRatio($num=1) {
+        $this->ratio = max(1, intval($num));
+    }
+
+
+    public function getRatio() {
+        return $this->ratio;
+    }
 
 
 }

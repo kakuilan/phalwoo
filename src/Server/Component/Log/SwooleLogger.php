@@ -27,6 +27,12 @@ class SwooleLogger extends Monologger {
 
 
     /**
+     * 日志写入概率,1/N
+     * @var int
+     */
+    protected $ratio = 1;
+
+    /**
      * SwooleLogger constructor.
      *
      * @param string                   $name 日志名
@@ -54,6 +60,7 @@ class SwooleLogger extends Monologger {
 
         $this->defaultHandler = new AsyncStreamHandler($this->logFile, Monologger::INFO);
         $this->defaultHandler->setFormatter($formatter);
+        $this->defaultHandler->setRatio($this->ratio);
 
         parent::pushHandler($this->defaultHandler);
     }
@@ -74,10 +81,19 @@ class SwooleLogger extends Monologger {
     }
 
 
-
     public function getCurrentHandler() {
         $handlers = $this->getHandlers();
         return $handlers ? current($handlers) : null;
+    }
+
+
+    public function setRatio($num=1) {
+        $this->ratio = max(1, intval($num));
+    }
+
+
+    public function getRatio() {
+        return $this->ratio;
     }
 
 
