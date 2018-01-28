@@ -55,7 +55,7 @@ class Cookies extends PhalconCookies implements CookiesInterface, InjectionAware
      *
      * @param string $name
      * @param mixed $value
-     * @param int $expire
+     * @param int $expire 有效期,秒,非时间戳
      * @param string $path
      * @param bool $secure
      * @param string $domain
