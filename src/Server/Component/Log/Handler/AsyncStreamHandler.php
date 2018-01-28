@@ -33,10 +33,10 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
     protected $useLocking;
     private $dirCreated;
 
-    protected $maxFileSize = 0;
-    protected $maxRecords = 0;
-    protected $maxFileNum = 0;
-    protected $writeBlocks = 50; //每次写入多少条
+    protected $maxFileSize = 20971520;
+    protected $maxRecords = 64;
+    protected $maxFileNum = 20;
+    protected $writeBlocks = 64; //每次写入多少条
     protected $recordPools = []; //日志消息池,待转入recordBuffers
     protected $recordBuffers = []; //日志消息,待写入文件
     protected $logDir;
@@ -74,7 +74,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
         $conf = SwooleServer::getProperty('conf');
         $this->maxFileSize = $conf['sys_log']['file_size'] ?? SwooleLogger::$maxFileSize;
         $this->maxFileNum = $conf['sys_log']['max_files'] ?? SwooleLogger::$maxFileNum;
-        $this->maxRecords = SwooleLogger::$maxRecords;
+        $this->maxRecords = $conf['sys_log']['max_records'] ?? SwooleLogger::$maxRecords;
 
         $this->createDir();
         //$this->bindSwooleCloseEvent();
@@ -162,8 +162,8 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
      */
     protected function write(array $record) {
         array_push($this->recordPools, strval($record['formatted']));
-        if($this->countRecords() >= $this->maxRecords) {
-            $this->recordBuffers += array_splice($this->recordPools, 0, $this->maxRecords);
+        if($this->ratio==1 || $this->countRecords() >= $this->maxRecords) {
+            $this->recordBuffers += array_splice($this->recordPools, 0, ($this->maxRecords ? $this->maxRecords : $this->writeBlocks));
 
             //异步写日志文件
             $this->streamWrite(false);
@@ -183,7 +183,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
 
     protected function streamWrite($all=false) {
         //允许一个随机率可写,否则可能内存不足
-        $writeable = !$all || !$this->isWriting || mt_rand(1, $this->ratio)==$this->ratio;
+        $writeable = $all || !$this->isWriting || mt_rand(1, $this->ratio)==$this->ratio;
         if(!$writeable) return false;
 
         while (true) {
