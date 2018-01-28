@@ -144,14 +144,14 @@ class Dispatcher extends BaseDispatcher implements DispatcherInterface {
         $exception = new Exception($message, $exceptionCode);
 
         if($this->_handleException($exception) === false) {
-            //return false;
+            return false;
         }
 
         /**
          * Throw the exception if it wasn't handled
          */
-        //throw $exception;
-        return $this->displayException($exception);
+        throw $exception;
+        //return $this->displayException($exception);
     }
 
 

@@ -21,6 +21,7 @@ use Phalcon\Mvc\Application\Exception;
 use Phalcon\Mvc\Router\RouteInterface;
 use Phalcon\Mvc\ModuleDefinitionInterface;
 use Lkk\Phalwoo\Server\SwooleServer;
+use Throwable;
 
 
 class Application extends PhApp {
@@ -216,6 +217,9 @@ class Application extends PhApp {
          * The dispatcher must return an object
          */
         $controller = yield $dispatcher->dispatch();
+        if(is_object($controller) && $controller instanceof Throwable) {
+            return $controller;
+        }
 
         //包含var_dump等debug调试信息
         $debug = SwooleServer::isOpenDebug() ? ob_get_contents() : '';

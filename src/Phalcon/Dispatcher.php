@@ -233,7 +233,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
             // because it would allow the application to break out of the defined logic inside the dispatcher
             // which handles all dispatch exceptions.
             $e = new PhalconException("Parameters must be an Array");
-            return $this->displayException($e);
+            throw $e;
+            //return $this->displayException($e);
         }
 
         $this->_params = $params;
@@ -417,11 +418,11 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
      */
     public function displayException($e) {
         if(is_object($e)) {
-            $resp = "Error code: " . $e->getCode() . '<br>';
-            $resp .= "Error message: " . $e->getMessage() . '<br>';
-            $resp .= "Error file: " . $e->getFile() . '<br>';
-            $resp .= "Error fileline: " . $e->getLine() . '<br>';
-            $resp .= "Error trace: " . $e->getTraceAsString() . '<br>';
+            $resp = "Error code:[Dsipatcher] " . $e->getCode() . '\r\n';
+            $resp .= "Error message: " . $e->getMessage() . '\r\n';
+            $resp .= "Error file: " . $e->getFile() . '\r\n';
+            $resp .= "Error fileline: " . $e->getLine() . '\r\n';
+            $resp .= "Error trace: " . $e->getTraceAsString() . '\r\n';
         }else{
             $resp = (string)$e;
         }
@@ -448,7 +449,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
         try {
             yield $handler = $this->_dispatch();
         }catch (Throwable $e) {
-            return $this->displayException($e);
+            //return $this->displayException($e);
+            return $e;
         }
 
         return $handler;
@@ -510,10 +512,10 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                         return false;
                     }
                     // Otherwise, bubble Exception
-                    //throw $e;
+                    throw $e;
                 }
                 // Otherwise, user forwarded, continue
-                return $this->displayException($e);
+                //return $this->displayException($e);
             }
 
         }
@@ -546,8 +548,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                         continue;
                     }
 
-                    //throw $e;
-                    return $this->displayException($e);
+                    throw $e;
+                    //return $this->displayException($e);
                 }
 
             }
@@ -639,8 +641,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                         $dependencyInjector->remove($handlerClass);
                         continue;
                     }
-                    //throw $e;
-                    return $this->displayException($e);
+                    throw $e;
+                    //return $this->displayException($e);
                 }
             }
 
@@ -656,8 +658,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                         $dependencyInjector->remove($handlerClass);
                         continue;
                     }
-                    //throw $e;
-                    return $this->displayException($e);
+                    throw $e;
+                    //return $this->displayException($e);
                 }
             }
 
@@ -687,8 +689,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                         if($this->_handleException($e) === false || $this->_finished === false) {
                             continue;
                         }
-                        //throw $e;
-                        return $this->displayException($e);
+                        throw $e;
+                        //return $this->displayException($e);
                     }
                 }
 
@@ -704,8 +706,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                         if($this->_handleException($e) === false || $this->_finished === false) {
                             continue;
                         }
-                        //throw $e;
-                        return $this->displayException($e);
+                        throw $e;
+                        //return $this->displayException($e);
                     }
                 }
             }
@@ -756,8 +758,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                 if($this->_handleException($e) === false || $this->_finished === false) {
                     continue;
                 }
-                //throw $e;
-                return $this->displayException($e);
+                throw $e;
+                //return $this->displayException($e);
             }
 
             // Calling "dispatch:afterExecuteRoute" event
@@ -770,8 +772,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                     if($this->_handleException($e) === false || $this->_finished === false) {
                         continue;
                     }
-                    //throw $e;
-                    return $this->displayException($e);
+                    throw $e;
+                    //return $this->displayException($e);
                 }
             }
 
@@ -785,8 +787,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                     if($this->_handleException($e) === false || $this->_finished === false) {
                         continue;
                     }
-                    //throw $e;
-                    return $this->displayException($e);
+                    throw $e;
+                    //return $this->displayException($e);
                 }
             }
 
@@ -799,8 +801,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                     if($this->_handleException($e) === false || $this->_finished === false) {
                         continue;
                     }
-                    //throw $e;
-                    return $this->displayException($e);
+                    throw $e;
+                    //return $this->displayException($e);
                 }
             }
 
@@ -817,8 +819,8 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                     return false;
                 }
                 // Otherwise, bubble Exception
-                //throw $e;
-                return $this->displayException($e);
+                throw $e;
+                //return $this->displayException($e);
             }
         }
 
