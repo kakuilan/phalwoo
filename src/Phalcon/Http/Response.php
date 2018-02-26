@@ -30,7 +30,7 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
 
     /**
      * Sent
-     *
+     * 是否swoole-response已经发送
      * @var boolean
      * @access protected
      */
@@ -91,6 +91,14 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
      * @var bool
      */
     protected $_isJson = false;
+
+
+    /**
+     * 是否跳转的动作
+     * @var bool
+     */
+    protected $_isRedirect = false;
+
 
     /**
      * Phalcon\Http\Response constructor
@@ -301,6 +309,8 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
      * @return Response
      */
     public function redirect($location = null, $externalRedirect = false, $statusCode = 302) {
+        $this->_isRedirect = true;
+
         if ($externalRedirect) {
             $header = $location;
         } else {
@@ -324,7 +334,7 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
         $swooleResponse = $this->getSwooleResponse();
         $swooleResponse->status($statusCode);
         $swooleResponse->header('Location', $header);
-        $swooleResponse->end();
+        //$swooleResponse->end(); //留给具体的应用去处理
 
         return $this;
     }
@@ -353,13 +363,15 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
      */
     public function sendCookies() {
         $cookies = $this->_cookies;
-        if (is_object($cookies)) {
+        if (is_object($cookies) && !$this->_sent) {
             $cookies->send();
-        }
 
-        /** @var Manager $eventManager */
-        $eventManager = $this->_dependencyInjector->get('eventsManager');
-        $eventManager->fire('response:beforeSendCookies', $this);
+            /** @var Manager $eventManager */
+            $eventManager = $this->_dependencyInjector->get('eventsManager');
+            $eventManager->fire('response:beforeSendCookies', $this);
+
+            $this->_sent = true;
+        }
 
         return $this;
     }
@@ -369,7 +381,7 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
      * 发送文件
      */
     public function sendFile() {
-        if($this->_file) {
+        if($this->_file && !$this->_sent) {
             $swooleResponse = $this->getSwooleResponse();
             $mime = FileHelper::getFileMime($this->_file, true);
             $swooleResponse->header('Content-Description', 'File Transfer');
@@ -377,6 +389,8 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
             $swooleResponse->header('Content-Disposition', 'attachment; filename=' . $this->_basePath);
             $swooleResponse->header('Content-Transfer-Encoding', 'binary');
             $swooleResponse->sendfile($this->_file);
+
+            $this->_sent = true;
         }
     }
 
@@ -387,13 +401,15 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
      * @return Response
      */
     public function send() {
-        $this->sendHeaders();
-        $this->sendCookies();
+        if(!$this->_sent) {
+            $this->sendHeaders();
+            $this->sendCookies();
 
-        //不发送具体内容,留给swoole response发送
-        //TODO 判断 $this->_content 和 $this->_file
+            //不发送具体内容,留给swoole response发送
+            //TODO 判断 $this->_content 和 $this->_file
 
-        $this->_sent = true;
+            $this->_sent = true;
+        }
 
         return $this;
     }

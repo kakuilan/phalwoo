@@ -21,6 +21,14 @@ class Cookie extends PhalconCookie implements CookieInterface, InjectionAwareInt
 
     use HttpTrait;
 
+    /**
+     * Sent
+     * 是否swoole-response已经发送
+     * @var boolean
+     * @access protected
+     */
+    protected $_sent = false;
+
 
     /**
      * Readed
@@ -181,63 +189,41 @@ class Cookie extends PhalconCookie implements CookieInterface, InjectionAwareInt
      * @return CookieInterface
      */
     public function send() {
-        $name     = $this->_name;
-        $value    = $this->_value;
-        $expire   = $this->_expire;
-        $domain   = $this->_domain;
-        $path     = $this->_path;
-        $secure   = $this->_secure;
-        $httpOnly = $this->_httpOnly;
+        if(!$this->_sent) {
+            $name     = $this->_name;
+            $value    = $this->_value;
+            $expire   = $this->_expire;
+            $domain   = $this->_domain;
+            $path     = $this->_path;
+            $secure   = $this->_secure;
+            $httpOnly = $this->_httpOnly;
 
-        /** @var DiInterface $di */
-        $di = $this->_dependencyInjector;
+            /** @var DiInterface $di */
+            $di = $this->_dependencyInjector;
 
-        if (!is_object($di)) {
-            throw new Exception("A dependency injection object is required to access the 'session' service");
-        }
-
-        /*$session = $di->getShared('session');
-        if($session->isStarted() && $session->getWritable()) {
-            $definition = ['encrypt' => $this->_useEncryption];
-            if ($expire != 0) {
-                $definition['expire'] = $expire;
+            if (!is_object($di)) {
+                throw new Exception("A dependency injection object is required to access the 'session' service");
             }
 
-            if (!empty($path)) {
-                $definition['path'] = $path;
-            }
+            if ($this->_useEncryption) {
+                if (!empty($value)) {
+                    if (!is_object($di)) {
+                        throw new Exception("A dependency injection object is required to access the 'filter' service");
+                    }
 
-            if (!empty($domain)) {
-                $definition['domain'] = $domain;
-            }
-
-            if (!empty($secure)) {
-                $definition['secure'] = $secure;
-            }
-
-            if (!empty($httpOnly)) {
-                $definition['httpOnly'] = $httpOnly;
-            }
-
-            $session->set('_PHCOOKIE_' . $name, $definition);
-        }*/
-
-        if ($this->_useEncryption) {
-            if (!empty($value)) {
-                if (!is_object($di)) {
-                    throw new Exception("A dependency injection object is required to access the 'filter' service");
+                    $crypt = $di->getShared('crypt');
+                    $encryptValue = $crypt->encryptBase64((string)$value);
+                } else {
+                    $encryptValue = $value;
                 }
-
-                $crypt = $di->getShared('crypt');
-                $encryptValue = $crypt->encryptBase64((string)$value);
             } else {
                 $encryptValue = $value;
             }
-        } else {
-            $encryptValue = $value;
-        }
 
-        $this->getSwooleResponse()->cookie($name, $encryptValue, $expire, $path, $domain, $secure, $httpOnly);
+            $this->getSwooleResponse()->cookie($name, $encryptValue, $expire, $path, $domain, $secure, $httpOnly);
+
+            $this->_sent = true;
+        }
 
         return $this;
     }
@@ -323,4 +309,3 @@ class Cookie extends PhalconCookie implements CookieInterface, InjectionAwareInt
 
 
 }
-
