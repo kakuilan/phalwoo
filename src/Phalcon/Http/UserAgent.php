@@ -347,6 +347,32 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
 
 
     /**
+     * 获取简单的uuid(使用md5快速)
+     * @return mixed
+     */
+    public function getAgentUuidSimp() {
+        $flag = 2;
+
+        if(is_null($this->agentUuid) || !isset($this->agentUuid[$flag])) {
+            $arr = [];
+
+            $arr['host'] = $this->request->header['host'] ?? '';
+            $arr['user-agent'] = $this->request->header['user-agent'] ?? '';
+            $arr['accept-language'] = $this->request->header['accept-language'] ?? '';
+            $arr['accept-encoding'] = $this->request->header['accept-encoding'] ?? '';
+            $arr['dnt'] = $this->request->header['dnt'] ?? '';
+            $arr['connection'] = $this->request->header['connection'] ?? '';
+            ksort($arr);
+
+            $this->agentUuid[$flag] = substr(md5(json_encode($arr)),8,8);
+        }
+
+        return $this->agentUuid[$flag];
+    }
+
+
+
+    /**
      * 获取agen的uuid
      * @param bool $hasFp
      * @return mixed
