@@ -21,6 +21,7 @@ use Phalcon\Mvc\Application\Exception;
 use Phalcon\Mvc\Router\RouteInterface;
 use Phalcon\Mvc\ModuleDefinitionInterface;
 use Lkk\Phalwoo\Server\SwooleServer;
+use Phalcon\Mvc\View as PhView;
 use Throwable;
 
 
@@ -183,6 +184,8 @@ class Application extends PhApp {
         $implicitView = $this->_implicitView;
         if ($implicitView === true) {
             $view = $dependencyInjector->getShared("view");
+            $vLev = $view->getCurrentRenderLevel();
+            if($vLev == PhView::LEVEL_NO_RENDER) $implicitView = false;
         }
 
         /**
