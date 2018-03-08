@@ -348,14 +348,16 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
 
     /**
      * 获取简单的uuid(使用md5快速)
+     * @param bool $hasFp
      * @return mixed
      */
-    public function getAgentUuidSimp() {
-        $flag = 2;
+    public function getAgentUuidSimp($hasFp=true) {
+        $flag = '2-' . intval($hasFp);
 
         if(is_null($this->agentUuid) || !isset($this->agentUuid[$flag])) {
             $arr = [];
 
+            $arr['agent-fingerprint'] = $hasFp ? $this->agentFpValue : '';
             $arr['host'] = $this->request->header['host'] ?? '';
             $arr['user-agent'] = $this->request->header['user-agent'] ?? '';
             $arr['accept-language'] = $this->request->header['accept-language'] ?? '';
@@ -378,8 +380,8 @@ class UserAgent extends LkkService implements InjectionAwareInterface {
      * @return mixed
      */
     private function _getAgentUuid($hasFp=true) {
-        $flag = intval($hasFp);
-        if($hasFp && empty($this->agentFpValue)) $flag = 0;
+        if($hasFp && empty($this->agentFpValue)) $hasFp = false;
+        $flag = '1-' . intval($hasFp);
         $this->sessionHasFp = !empty($this->agentFpValue);
 
         if(is_null($this->agentUuid) || !isset($this->agentUuid[$flag])) {
