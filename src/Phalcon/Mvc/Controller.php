@@ -35,7 +35,7 @@ class Controller extends PhController {
 
         if($status) {
             //取消视图模板
-            if(isset($this->view)) {
+            if(isset($this->view) && $this->view->getCurrentRenderLevel()!=View::LEVEL_NO_RENDER) {
                 $this->view->setRenderLevel(View::LEVEL_NO_RENDER);
                 $this->view->disable();
             }
