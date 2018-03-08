@@ -1100,7 +1100,7 @@ class SwooleServer extends LkkService {
      * 生成请求的uuid
      * @param $swooleRequest
      *
-     * @return int
+     * @return string
      */
     public static function makeRequestUuid($swooleRequest) {
         $res  = 0;
@@ -1110,7 +1110,9 @@ class SwooleServer extends LkkService {
             $server = $swooleRequest->server ?? [];
             $arr = array_merge($get, $cookie, $server);
             sort($arr);
-            $res = EncryptHelper::murmurhash3_int(json_encode($arr), 13, true);
+            //$res = EncryptHelper::murmurhash3_int(json_encode($arr), 13, true);
+            $res = substr(md5(md5(json_encode($arr))), 8, 16);
+            unset($arr);
         }
 
         return $res;
