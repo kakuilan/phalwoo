@@ -943,7 +943,7 @@ class SwooleServer extends LkkService {
     public static function onSwooleConnect($serv, $fd, $fromId) {
         self::instance()->eventFire(__FUNCTION__);
         $workId = $serv->worker_id;
-        echo "new Connect: fromId[{$fromId}] workId[{$workId}]...\r\n";
+        //echo "new Connect: fromId[{$fromId}] workId[{$workId}]...\r\n";
 
     }
 
@@ -958,7 +958,7 @@ class SwooleServer extends LkkService {
      */
     public static function onSwooleRequest($request, $response) {
         self::instance()->eventFire(__FUNCTION__);
-        echo "on Request...\r\n";
+        //echo "on Request...\r\n";
 
         $conf = self::getProperty('conf');
         $response->header('X-Powered-By', ($conf['server_name'] ?? 'apache'));
@@ -988,7 +988,7 @@ class SwooleServer extends LkkService {
      */
     public static function onSwooleClose($serv, $fd, $fromId) {
         self::instance()->eventFire(__FUNCTION__);
-        echo "on Close: fromId[{$fromId}]...\r\n";
+        //echo "on Close: fromId[{$fromId}]...\r\n";
 
     }
 
