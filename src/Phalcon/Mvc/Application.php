@@ -184,8 +184,6 @@ class Application extends PhApp {
         $implicitView = $this->_implicitView;
         if ($implicitView === true) {
             $view = $dependencyInjector->getShared("view");
-            $vLev = $view->getCurrentRenderLevel();
-            if($vLev == PhView::LEVEL_NO_RENDER) $implicitView = false;
         }
 
         /**
