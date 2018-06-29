@@ -190,7 +190,9 @@ class Redis {
                 $this->link = new \Redis();
                 $persistentId = $this->getPersistentId();
                 try {
-                    $result = $this->link->pconnect($this->conf['host'], $this->conf['port'], $timeout, $persistentId);
+                    //$result = $this->link->pconnect($this->conf['host'], $this->conf['port'], $timeout, $persistentId);
+                    //暂不使用长连接,会导致各redis实例的库错乱问题
+                    $result = $this->link->connect($this->conf['host'], $this->conf['port'], $timeout);
                     if( !$result ) {
                         $promise->resolve([
                             'code'      => ServerConst::ERR_REDIS_CONNECT_FAILED,
