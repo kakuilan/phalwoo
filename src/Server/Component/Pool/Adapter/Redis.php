@@ -24,6 +24,10 @@ class Redis extends Adapter {
      */
     private $sync;
 
+    /**
+     * @var int
+     */
+    private $sync_first_connect_time;
 
 
     public function __construct(array $conf) {
@@ -35,7 +39,6 @@ class Redis extends Adapter {
     }
 
 
-
     public function init() {
         if(SwooleServer::isWorker()) {
             for($i = 0; $i < $this->size; $i ++) {
@@ -43,10 +46,25 @@ class Redis extends Adapter {
             }
         }
 
-        $this->sync = new Driver($this->conf['args'], ServerConst::MODE_SYNC);
-        $this->sync->connect(0);
+        $this->reconnSync();
     }
 
+
+    /**
+     * 重建同步连接
+     * @return Driver|mixed
+     */
+    protected function reconnSync() {
+        if(is_object($this->sync)) {
+            $this->sync->close();
+        }
+
+        $this->sync = new Driver($this->conf['args'], ServerConst::MODE_SYNC);
+        $this->sync->connect(0);
+        $this->sync_first_connect_time = time();
+
+        return $this->sync;
+    }
 
 
     /**
@@ -64,6 +82,11 @@ class Redis extends Adapter {
             $driver = $this->idle_queue->dequeue();
             return ($driver instanceof Driver) ? $driver : $this->sync;
         } else {
+            $expireTime = time() - ($this->conf['args']['wait_timeout'] ?? 3600);
+            if(($expireTime && $this->sync_first_connect_time<$expireTime)) {
+                $this->reconnSync();
+            }
+
             return $this->sync;
         }
     }

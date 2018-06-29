@@ -114,7 +114,7 @@ class Mysql {
         $promise = new Promise();
 
         switch ($this->mode) {
-            case ServerConst::MODE_ASYNC : {
+            case ServerConst::MODE_ASYNC : { //异步连接
                 $this->db = new \swoole_mysql();
                 $this->db->on('Close', function($db){
                     SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error("ASYNC MySQL Close connection {$this->id}");
@@ -139,7 +139,7 @@ class Mysql {
                 break;
             }
             
-            case ServerConst::MODE_SYNC : {
+            case ServerConst::MODE_SYNC : { //同步连接
                 $dbHost = $this->conf['host'];
                 $dbUser = $this->conf['user'];
                 $dbPwd  = $this->conf['password'];

@@ -23,6 +23,11 @@ class Mysql extends Adapter {
      */
     private $sync;
 
+    /**
+     * @var int
+     */
+    private $sync_first_connect_time;
+
     public function __construct($conf) {
         $this->conf = $conf;
         $this->conf['name'] = $conf['name'] ?? __FILE__;
@@ -37,8 +42,25 @@ class Mysql extends Adapter {
                 $this->newItem($i + 1);
             }
         }
+
+        $this->reconnSync();
+    }
+
+
+    /**
+     * 重建同步连接
+     * @return Driver|mixed
+     */
+    protected function reconnSync() {
+        if(is_object($this->sync)) {
+            $this->sync->close();
+        }
+
         $this->sync = new Driver($this->conf['args'], ServerConst::MODE_SYNC);
         $this->sync->connect(0);
+        $this->sync_first_connect_time = time();
+
+        return $this->sync;
     }
 
 
@@ -61,6 +83,11 @@ class Mysql extends Adapter {
             $this->waiting_tasks->enqueue($promise);
             return $promise;
         }else {
+            $expireTime = time() - ($this->conf['args']['wait_timeout'] ?? 3600);
+            if(($expireTime && $this->sync_first_connect_time<$expireTime)) {
+                $this->reconnSync();
+            }
+
             return $this->sync;
         }
     }

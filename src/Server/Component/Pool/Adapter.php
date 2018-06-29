@@ -66,12 +66,17 @@ abstract class Adapter {
     abstract public function init();
 
     /**
+     * 重建同步连接
+     * @return mixed
+     */
+    abstract protected function reconnSync();
+
+    /**
      * 创建一个新的连接
      * @param $id
      * @return mixed
      */
     abstract protected function newItem($id);
-
 
     /**
      * 获取连接池名称
