@@ -102,6 +102,10 @@ class Redis extends Backend {
         }
 
         $cachedContent = $req['data'];
+        unset($ttlRes, $req);
+
+        $this->_lastKey = $prefixedkey;
+
         if (is_numeric($cachedContent)) {
             return $cachedContent;
         } else {
@@ -110,8 +114,6 @@ class Redis extends Backend {
              */
             $res = $this->_frontend->afterRetrieve($cachedContent);
         }
-
-        $this->_lastKey = $prefixedkey;
 
         return $res;
     }
@@ -159,12 +161,8 @@ class Redis extends Backend {
         }
         $lifetime = intval($lifetime);
 
-        if (is_numeric($cachedContent)) {
-            $status = yield $this->getRedis()->setex($lastKey, $lifetime, $cachedContent);
-        } else {
-            $preparedContent = $this->_frontend->beforeStore($cachedContent);
-            $status = yield $this->getRedis()->setex($lastKey, $lifetime, $preparedContent);
-        }
+        $preparedContent = is_numeric($cachedContent) ? $cachedContent : $this->_frontend->beforeStore($cachedContent);
+        $status = yield $this->getRedis()->setex($lastKey, $lifetime, $preparedContent);
 
         if($status['code']!=ServerConst::ERR_SUCCESS) return false;
 
@@ -180,6 +178,8 @@ class Redis extends Backend {
         $this->_started = false;
         $this->_lastKey = $lastKey;
         $this->_lastLifetime = $lifetime;
+
+        unset($content, $cachedContent, $preparedContent);
 
         return true;
     }
@@ -212,7 +212,8 @@ class Redis extends Backend {
      * @return array
      */
     public function queryKeys($prefix = null) {
-        $search = "{$prefix}*";
+        $key = $this->_prefix . $prefix;
+        $search = "{$key}*";
         $res = yield $this->getRedis()->keys($search);
         return ($res['code']==ServerConst::ERR_SUCCESS) ? $res['data'] : [];
     }
@@ -274,14 +275,15 @@ class Redis extends Backend {
         if($this->_prefix) {
             $keys = yield $this->queryKeys($this->_prefix);
             if($keys) {
+                $res = true;
                 $slices = array_chunk($keys, 10);
                 foreach ($slices as $slice) {
                     $delRes = yield $this->getRedis()->delete($slice);
-                    $res = ($delRes['code']==ServerConst::ERR_SUCCESS);
                 }
             }
         }else{
-            $res = yield $this->getRedis()->flushDB();
+            $ret = yield $this->getRedis()->flushDB();
+            $res = ($ret['code']==ServerConst::ERR_SUCCESS);
         }
 
         return $res;
