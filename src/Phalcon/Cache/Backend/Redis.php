@@ -66,6 +66,7 @@ class Redis extends Backend {
             if ($this->_useSafeKey && preg_match('/[^a-zA-Z0-9_.-]+/', $prefix)) {
                 throw new Exception("FileCache prefix should only use alphanumeric characters.");
             }
+            $this->_prefix = $prefix;
         }
 
         parent::__construct($frontend, $options);

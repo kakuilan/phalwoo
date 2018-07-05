@@ -228,7 +228,7 @@ class Application extends PhApp {
         /**
          * Get the latest value returned by an action
          */
-        $possibleResponse = $dispatcher->getReturnedValue();
+        $possibleResponse = yield $dispatcher->getReturnedValue();
 
         $response =$dependencyInjector->getShared("response");
         $isJson = $response->isJson();
