@@ -274,6 +274,9 @@ class SwooleServer extends LkkService {
     }
 
 
+    /**
+     * 设置共享内存对象
+     */
     protected function setShareTable() {
         $this->shareTable = new Table(128, 10240);
     }
@@ -1111,7 +1114,7 @@ class SwooleServer extends LkkService {
             $arr = array_merge($get, $cookie, $server);
             sort($arr);
             //$res = EncryptHelper::murmurhash3_int(json_encode($arr), 13, true);
-            $res = substr(md5(md5(json_encode($arr))), 8, 16);
+            $res = substr(md5(json_encode($arr)), 8, 16);
             unset($arr);
         }
 
