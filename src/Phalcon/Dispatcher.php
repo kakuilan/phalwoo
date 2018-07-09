@@ -679,7 +679,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
                 if(method_exists($handler, "initialize")) {
                     try {
                         $this->_isControllerInitialize = true;
-                        $handler->initialize();
+                        yield $handler->initialize();
                     }catch (Exception $e) {
                         $this->_isControllerInitialize = false;
 
