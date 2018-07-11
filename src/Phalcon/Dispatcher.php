@@ -675,11 +675,12 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
             // and blog posts for 4.0, this change will happen.
             //
             // @see https://github.com/phalcon/cphalcon/pull/13112
+            $controllerInitializeResult = null;
             if($wasFresh===true) {
                 if(method_exists($handler, "initialize")) {
                     try {
                         $this->_isControllerInitialize = true;
-                        yield $handler->initialize();
+                        $controllerInitializeResult = yield $handler->initialize();
                     }catch (Exception $e) {
                         $this->_isControllerInitialize = false;
 
@@ -745,21 +746,30 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
             // Save the current handler
             $this->_lastHandler = $handler;
 
-            try {
-                // We update the latest value produced by the latest handler
-                //$this->_returnedValue = yield $this->callActionMethod($handler, $actionMethod, $params);
-                $this->_returnedValue = Promise::co(function () use($handler, $actionMethod, $params) {
-                    yield $this->callActionMethod($handler, $actionMethod, $params);
-                });
-                if($this->_finished === false) {
-                    continue;
+            //控制器初始化返回拦截
+            if(is_null($controllerInitializeResult)) {
+                try {
+                    // We update the latest value produced by the latest handler
+                    //$this->_returnedValue = yield $this->callActionMethod($handler, $actionMethod, $params);
+                    $this->_returnedValue = Promise::co(function () use($handler, $actionMethod, $params) {
+                        yield $this->callActionMethod($handler, $actionMethod, $params);
+                    });
+                    if($this->_finished === false) {
+                        continue;
+                    }
+                }catch (Throwable $e) {
+                    if($this->_handleException($e) === false || $this->_finished === false) {
+                        continue;
+                    }
+                    throw $e;
+                    //return $this->displayException($e);
                 }
-            }catch (Throwable $e) {
-                if($this->_handleException($e) === false || $this->_finished === false) {
-                    continue;
+            }else{
+                if(is_string($controllerInitializeResult)) {
+                    $this->_returnedValue = $controllerInitializeResult;
+                }else{
+                    $this->_returnedValue = $handler->response->getContent();
                 }
-                throw $e;
-                //return $this->displayException($e);
             }
 
             // Calling "dispatch:afterExecuteRoute" event
