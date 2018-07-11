@@ -747,7 +747,7 @@ abstract class Dispatcher implements DispatcherInterface, InjectionAwareInterfac
             $this->_lastHandler = $handler;
 
             //控制器初始化返回拦截
-            if(is_null($controllerInitializeResult)) {
+            if(is_null($controllerInitializeResult) || $controllerInitializeResult===true) {
                 try {
                     // We update the latest value produced by the latest handler
                     //$this->_returnedValue = yield $this->callActionMethod($handler, $actionMethod, $params);
