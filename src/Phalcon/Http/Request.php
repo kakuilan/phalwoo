@@ -107,7 +107,7 @@ class Request implements RequestInterface, InjectionAwareInterface {
                 $source = [];
         }
 
-        if ($name === null) {
+        if ($name === null || $name==='') {
             return $source;
         }
 
