@@ -199,8 +199,8 @@ class Request implements RequestInterface, InjectionAwareInterface {
      * @param string $name
      * @return mixed
      */
-    public function getServer($name) {
-        return $this->_swooleRequest->server[$name] ?? null;
+    public function getServer($name=null) {
+        return (is_null($name) || $name==='') ? $this->_swooleRequest->server : ($this->_swooleRequest->server[$name] ?? null);
     }
 
 
