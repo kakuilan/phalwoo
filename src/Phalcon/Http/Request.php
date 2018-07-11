@@ -290,7 +290,8 @@ class Request implements RequestInterface, InjectionAwareInterface {
      * @return string
      */
     public function getScheme() {
-        return stripos($this->_swooleRequest->server['server_protocol'], 'https')!==false ? 'https' : 'http';
+        $proto = $this->_swooleRequest->header['x-forwarded-proto'] ?? ($this->_swooleRequest->server['server_protocol'] ?? '');
+        return stripos($proto, 'https')!==false ? 'https' : 'http';
     }
 
 
@@ -782,7 +783,7 @@ class Request implements RequestInterface, InjectionAwareInterface {
      * @return string
      */
     public function getHTTPReferer() {
-        return $this->_swooleRequest->header['referer'] ?? '';
+        return $this->_swooleRequest->header['referer'] ?? ($this->_swooleRequest->server['HTTP_REFERER']);
     }
 
 
@@ -1032,6 +1033,26 @@ class Request implements RequestInterface, InjectionAwareInterface {
      */
     public function getUseMillisecond() {
         return $this->_useMillisecond;
+    }
+
+
+    /**
+     * 获取完整URL
+     * @param bool $hasQuery 是否包含get参数
+     * @return string
+     */
+    public final function getURL($hasQuery=false) {
+        $scheme = $this->getScheme();
+        $host = $this->getHttpHost();
+        $uri = $this->getURI();
+
+        $url = "{$scheme}://{$host}{$uri}";
+        if($hasQuery && isset($this->_swooleRequest->server['query_string']) && !empty($this->_swooleRequest->server['query_string'])) {
+            $url .= '?' . $this->_swooleRequest->server['query_string'];
+        }
+        unset($scheme, $host, $uri);
+
+        return $url;
     }
 
 

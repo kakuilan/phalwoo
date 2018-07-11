@@ -46,12 +46,17 @@ trait HttpTrait {
     }
 
 
+    /**
+     * 设置swoole的请求
+     * @param SwooleRequest $request
+     */
     public function setSwooleRequest(SwooleRequest $request) {
         $this->_swooleRequest = $request;
     }
 
 
     /**
+     * 获取swoole的请求
      * @param null $di
      * @return mixed|SwooleRequest
      * @throws RequestException
@@ -71,12 +76,17 @@ trait HttpTrait {
     }
 
 
+    /**
+     * 设置swoole的响应
+     * @param SwooleResponse $response
+     */
     public function setSwooleResponse(SwooleResponse $response) {
         $this->_swooleResponse = $response;
     }
 
 
     /**
+     * 获取swoole响应
      * @param null $di
      * @return mixed|SwooleResponse
      * @throws ResponseException
