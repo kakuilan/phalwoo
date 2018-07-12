@@ -783,7 +783,7 @@ class Request implements RequestInterface, InjectionAwareInterface {
      * @return string
      */
     public function getHTTPReferer() {
-        return $this->_swooleRequest->header['referer'] ?? ($this->_swooleRequest->server['HTTP_REFERER']);
+        return $this->_swooleRequest->header['referer'] ?? ($this->_swooleRequest->server['HTTP_REFERER'] ?? '');
     }
 
 
