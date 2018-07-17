@@ -260,7 +260,7 @@ class Redis extends Adapter {
         $sessionQueue->push($workData);
 
         $state = $sessionQueue->stats();
-        echo "session queue len: {$state['queue_num']}\r\n";
+        //echo "session queue len: {$state['queue_num']}\r\n";
 
         return true;
     }

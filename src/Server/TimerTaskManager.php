@@ -201,7 +201,7 @@ class TimerTaskManager extends LkkService {
                 $title = $taskData['message']['title'] ?? $k;
                 $taskData = $this->initTaskData($taskData);
                 if(empty($taskData)) {
-                    echo "check timer [$title] has error: {$this->error}\r\n";
+                    //echo "check timer [$title] has error: {$this->error}\r\n";
                     unset($this->timerTasks[$k]);
                     continue;
                 }
@@ -210,7 +210,7 @@ class TimerTaskManager extends LkkService {
             }
         }
 
-        echo "loaded timer tasks total:[$taskNum]\r\n";
+        //echo "loaded timer tasks total:[$taskNum]\r\n";
 
         return $taskNum;
     }
@@ -241,7 +241,7 @@ class TimerTaskManager extends LkkService {
 
         $this->setTimerId($timerId);
 
-        echo "start timerId [$timerId]\r\n";
+        //echo "start timerId [$timerId]\r\n";
 
         return $timerId;
     }
@@ -254,7 +254,7 @@ class TimerTaskManager extends LkkService {
     public function stopTimerTasks() {
         $res = false;
         $timerId = $this->getTimerId();
-        echo "stop timerId [$timerId]\r\n";
+        //echo "stop timerId [$timerId]\r\n";
         if($timerId) {
             $shareTable = SwooleServer::getShareTable();
             $workerPid = intval($shareTable->get('server', 'timerWorkerPid'));
@@ -283,14 +283,14 @@ class TimerTaskManager extends LkkService {
             foreach ($this->timerTasks as $k=> &$taskData) {
                 //检查结束时间
                 if($taskData['run_endtime'] && $taskData['run_endtime'] < $now) {
-                    echo "delete timer [{$taskData['message']['title']}] error:run_endtime<now \r\n";
+                    //echo "delete timer [{$taskData['message']['title']}] error:run_endtime<now \r\n";
                     unset($this->timerTasks[$k]);
                     continue;
                 }
 
                 //检查执行次数
                 if($taskData['run_max_exec'] && $taskData['run_now_exec'] >= $taskData['run_max_exec']) {
-                    echo "delete timer [{$taskData['message']['title']}] error:run_now_exec > run_max_exec \r\n";
+                    //echo "delete timer [{$taskData['message']['title']}] error:run_now_exec > run_max_exec \r\n";
                     unset($this->timerTasks[$k]);
                     continue;
                 }

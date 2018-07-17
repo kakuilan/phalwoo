@@ -899,7 +899,7 @@ class SwooleServer extends LkkService {
         self::setWorkerPid($serv->worker_pid);
 
         self::instance()->eventFire(__FUNCTION__);
-        echo "Worker Start:[{$workerId}]...\r\n";
+        //echo "Worker Start:[{$workerId}]...\r\n";
 
         //最后一个worker处理启动定时器
         $conf = self::getProperty('conf');
@@ -924,7 +924,7 @@ class SwooleServer extends LkkService {
      */
     public static function onSwooleWorkerStop($serv, $workerId) {
         self::instance()->eventFire(__FUNCTION__);
-        echo "Worker Stop:[{$workerId}]...\r\n";
+        //echo "Worker Stop:[{$workerId}]...\r\n";
 
         //停止定时器
         $conf = self::getProperty('conf');
@@ -1053,7 +1053,7 @@ class SwooleServer extends LkkService {
      */
     public static function onSwoolePipeMessage($serv, $fromWorkerId, $message) {
         self::instance()->eventFire(__FUNCTION__);
-        echo "on PipeMessage...\r\n";
+        //echo "on PipeMessage...\r\n";
 
     }
 
@@ -1068,7 +1068,7 @@ class SwooleServer extends LkkService {
      */
     public static function onSwooleWorkerError($serv, $workerId, $workerPid, $exitCode) {
         self::instance()->eventFire(__FUNCTION__);
-        echo "on WorkerError...\r\nworkerId[$workerId] workerPid[$workerPid] exitCode[$exitCode]\r\n";
+        //echo "on WorkerError...\r\nworkerId[$workerId] workerPid[$workerPid] exitCode[$exitCode]\r\n";
 
     }
 
