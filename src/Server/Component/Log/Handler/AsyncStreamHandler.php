@@ -196,19 +196,26 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
 
             $logger = $this;
             $logger->setIsWriting(true);
-            swoole_async_writefile($this->url, $str, function($filename) use($logger) {
+
+            //在swoole的worker进程里面
+            //因为swoole_async_writefile异步,但task不允许[can't use async-io in task process]
+            if(SwooleServer::isWorker()) {
+                swoole_async_writefile($this->url, $str, function($filename) use($logger) {
+                    $logger->setIsWriting(false);
+                    //echo "logger write done.\r\n";
+
+                    //TODO 这里日志切割有问题,放到定时器里面切割?
+                    if(file_exists($filename) && filesize($filename) >= $logger->maxFileSize){
+                        $backupFile = $logger->logDir . '/' . basename($filename) . date('.YmdHis.') .'bak';
+                        rename($filename, $backupFile);
+
+                        $this->keepLogFiles();
+                    }
+                }, FILE_APPEND);
+            }else{
+                file_put_contents($this->url, $str, FILE_APPEND);
                 $logger->setIsWriting(false);
-                //echo "logger write done.\r\n";
-
-                //TODO 这里日志切割有问题,放到定时器里面切割?
-                if(file_exists($filename) && filesize($filename) >= $logger->maxFileSize){
-                    $backupFile = $logger->logDir . '/' . basename($filename) . date('.YmdHis.') .'bak';
-                    rename($filename, $backupFile);
-
-                    $this->keepLogFiles();
-                }
-            }, FILE_APPEND);
-
+            }
         }
 
         return true;
