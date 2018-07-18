@@ -10,6 +10,7 @@
 
 namespace Lkk\Phalwoo\Server;
 
+use Lkk\Concurrent\Promise;
 use Lkk\Helpers\CommonHelper;
 use Lkk\Helpers\EncryptHelper;
 use Lkk\Helpers\ValidateHelper;
@@ -1019,7 +1020,10 @@ class SwooleServer extends LkkService {
                         $obj = new $callback[0];
                         $callback[0] = $obj;
                     }
-                    call_user_func_array($callback, $params);
+                    //协程
+                    Promise::co(function() use ($callback, $params){
+                        yield call_user_func_array($callback, $params);
+                    });
                     break;
                 case '' :default :
                 break;
