@@ -303,6 +303,55 @@ class SwooleServer extends LkkService {
 
 
     /**
+     * 获取当前swoole的服务器主进程PID
+     * @return null
+     */
+    public static function getSwooleMasterPid() {
+        $server = self::getServer();
+        $id = $server->master_pid ?? null;
+        unset($server);
+        return $id;
+    }
+
+
+    /**
+     * 获取当前swoole的服务器管理进程PID
+     * @return null
+     */
+    public static function getSwooleManagerPid() {
+        $server = self::getServer();
+        $id = $server->manager_pid ?? null;
+        unset($server);
+        return $id;
+    }
+
+
+
+    /**
+     * 获取当前swoole的Worker进程的编号,包括Task进程
+     * @return null
+     */
+    public static function getSwooleWorkerId() {
+        $server = self::getServer();
+        $id = $server->worker_id ?? null;
+        unset($server);
+        return $id;
+    }
+
+
+    /**
+     * 获取当前swoole的Worker进程的操作系统进程ID,与posix_getpid()的返回值相同
+     * @return null
+     */
+    public static function getSwooleWorkerPid() {
+        $server = self::getServer();
+        $id = $server->worker_pid ?? null;
+        unset($server);
+        return $id;
+    }
+
+
+    /**
      * 解析CLI命令参数
      */
     public static function parseCommands() {
