@@ -263,6 +263,7 @@ class SwooleServer extends LkkService {
         ] : [];
         if($redisCnf) RedisQueue::resetDefultRedisCnf($redisCnf);
         $this->rediQueue = RedisQueue::getQueueObject(RedisQueue::APP_WORKFLOW_QUEUE_NAME, $conf);
+        unset($queueCnf, $redisCnf, $conf);
     }
 
 
@@ -514,6 +515,7 @@ class SwooleServer extends LkkService {
         if($extEvent) {
             call_user_func_array($extEvent['func'], $extEvent['parm']);
         }
+        unset($extEvent);
     }
 
 
@@ -526,7 +528,6 @@ class SwooleServer extends LkkService {
         $chkExts = self::checkExtensions();
         if(!$chkExts) exit(1);
 
-        $conf = self::getProperty('conf');
         $pidExis = file_exists(self::$pidFile);
         $masterIsAlive = false;
         $masterPid = $managerPid = 0;
@@ -572,6 +573,7 @@ class SwooleServer extends LkkService {
                 break;
             case 'stop' :
                 //停止自动热更新服务
+                $conf = self::getProperty('conf');
                 AutoReload::writeSelfPidFile(0, $conf['inotify']['pid_file']);
 
                 if(!$binded) {
@@ -915,6 +917,7 @@ class SwooleServer extends LkkService {
             $shareTable->setSubItem('server', ['timerWorkerPid'=>$serv->worker_pid]);
         }
 
+        unset($serv, $conf, $timerManager, $shareTable);
     }
 
 
@@ -929,11 +932,12 @@ class SwooleServer extends LkkService {
 
         //停止定时器
         $conf = self::getProperty('conf');
-        if ($workerId == $conf['server_conf']['worker_num'] -1) {
+        if ($workerId == ($conf['server_conf']['worker_num'] -1)) {
             $timerManager = self::getTimerTaskManager();
             $timerManager->stopTimerTasks();
         }
 
+        unset($conf, $timerManager);
     }
 
 
@@ -979,6 +983,8 @@ class SwooleServer extends LkkService {
 
         //$_REQUEST = $_SESSION = $_COOKIE = $_FILES = $_POST = $_SERVER = $_GET = [];
         //具体处理请求,留给子类去处理
+
+        unset($request, $response, $conf);
 
         return true;
     }
@@ -1026,11 +1032,11 @@ class SwooleServer extends LkkService {
                     });
                     break;
                 case '' :default :
-                break;
+                    break;
             }
         }
 
-        unset($taskData);
+        unset($taskData, $callback, $params);
 
         return '1';
     }
@@ -1119,7 +1125,7 @@ class SwooleServer extends LkkService {
             sort($arr);
             //$res = EncryptHelper::murmurhash3_int(json_encode($arr), 13, true);
             $res = substr(md5(json_encode($arr)), 8, 16);
-            unset($arr);
+            unset($get, $cookie, $server, $arr);
         }
 
         return $res;
@@ -1134,6 +1140,7 @@ class SwooleServer extends LkkService {
         $loger = self::getLogger();
         $msg = $e->getMessage() . ' ##code:' . $e->getCode() . ' ##file:' . $e->getFile() . ' ##line:' . $e->getLine();
         $loger->error($msg, $e->getTrace());
+        unset($msg, $loger);
     }
 
 

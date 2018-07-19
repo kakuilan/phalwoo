@@ -32,8 +32,10 @@ class ServerConst {
     const ERR_SUCCESS                                   = 0;               // 成功
 
     const ERR_MYSQL_TIMEOUT                             = -10;             // 数据库超时
-    const ERR_MYSQL_QUERY_FAILED                        = -11;             // 查询失败
-    const ERR_MYSQL_CONNECT_FAILED                      = -12;             // 连接失败
+    const ERR_MYSQL_CONNECT_FAILED                      = -11;             // 连接失败
+    const ERR_MYSQL_CONNECT_TIMEOUT                     = -12;             // 连接超时
+    const ERR_MYSQL_QUERY_FAILED                        = -13;             // 查询失败
+    const ERR_MYSQL_QUERY_TIMEOUT                       = -14;             // 查询超时
 
     const ERR_REDIS_CONNECT_FAILED                      = -20;             // Redis连接失败
     const ERR_REDIS_ERROR                               = -21;             // Redis请求失败,OR 获取不到结果

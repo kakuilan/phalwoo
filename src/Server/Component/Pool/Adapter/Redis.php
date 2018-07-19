@@ -25,9 +25,10 @@ class Redis extends Adapter {
     private $sync;
 
     /**
+     * 上次同步连接的时间
      * @var int
      */
-    private $sync_first_connect_time;
+    private $sync_first_connect_time = 0;
 
 
     public function __construct(array $conf) {
@@ -36,6 +37,7 @@ class Redis extends Adapter {
         $this->conf['size'] = $conf['size'] ?? 2;
 
         parent::__construct($this->conf['name'], $this->conf['size']);
+        unset($conf);
     }
 
 
@@ -82,8 +84,11 @@ class Redis extends Adapter {
             $driver = $this->idle_queue->dequeue();
             return ($driver instanceof Driver) ? $driver : $this->sync;
         } else {
-            $expireTime = time() - ($this->conf['args']['wait_timeout'] ?? 3600);
-            if(($expireTime && $this->sync_first_connect_time<$expireTime)) {
+            $now = time();
+            $waitTimeout = $this->conf['args']['wait_timeout'] ?? 3600;
+            $maxTime = $this->sync_first_connect_time + $waitTimeout;
+
+            if(empty($this->sync_first_connect_time) || !($now>=$this->sync_first_connect_time && $now<$maxTime)) {
                 $this->reconnSync();
             }
 
@@ -121,6 +126,7 @@ class Redis extends Adapter {
         }, function() use ($id){
             $this->newItem($id);
         });
+        unset($driver);
     }
 
 
@@ -128,6 +134,7 @@ class Redis extends Adapter {
         $promise = $this->waiting_tasks->dequeue();
         $driver = $this->idle_queue->dequeue();
         $promise->resolve($driver);
+        unset($promise, $driver);
     }
 
 

@@ -168,6 +168,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
             //异步写日志文件
             $this->streamWrite(false);
         }
+        unset($record);
     }
 
 
@@ -217,6 +218,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
                 $logger->setIsWriting(false);
             }
         }
+        unset($str, $logger);
 
         return true;
     }
@@ -256,10 +258,11 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
         foreach ($arr as $k=>$item) {
             $logNum++;
             if($logNum > $this->maxFileNum) {
-                unlink($item['file']);
+                @unlink($item['file']);
                 unset($arr[$k]);
             }
         }
+        unset($files, $arr);
 
         return true;
     }
@@ -324,6 +327,7 @@ class AsyncStreamHandler extends AbstractProcessingHandler {
             $logger->flush();
             return true;
         });
+        unset($di, $logger, $eventManager);
 
         return $this;
     }

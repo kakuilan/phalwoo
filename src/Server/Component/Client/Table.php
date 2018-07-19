@@ -64,6 +64,7 @@ class Table {
 
         $array = [self::$defaultValue => json_encode($values)];
         $res = $this->table->set($key, $array);
+        unset($values, $array);
 
         return $res;
     }
@@ -85,6 +86,7 @@ class Table {
 
         $values = array_merge($origin, $array);
         $res = $this->set($key, $values);
+        unset($array, $values);
 
         return $res;
     }

@@ -91,6 +91,8 @@ class Mysql {
         $this->mode     = $mode;
         $this->open_log = $config['open_log'] ?? false;
         $this->slow_query = $config['slow_query'] ?? 20;
+
+        unset($config);
     }
 
 
@@ -106,30 +108,31 @@ class Mysql {
     /**
      * 建立数据库连接
      * @param $id           int     连接ID
-     * @param $timeout      int     超时时间, 单位ms
+     * @param $timeout      int     超时时间,秒
      * @return Promise              Promise对象
      */
-    public function connect($id, $timeout=3000) {
+    public function connect($id, $timeout=3) {
         $this->id = $id;
         $promise = new Promise();
+        if(empty($timeout)) $timeout = 3;
+        $timeout = $timeout * 1000; //转为毫秒
 
         switch ($this->mode) {
             case ServerConst::MODE_ASYNC : { //异步连接
                 $this->db = new \swoole_mysql();
                 $this->db->on('Close', function($db){
-                    SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error("ASYNC MySQL Close connection {$this->id}");
+                    $this->open_log && SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error("ASYNC MySQL Close connection {$this->id}");
                     $this->close = true;
-                    unset($this->db);
                     $this->inPool(true);
                 });
                 $timeId = swoole_timer_after($timeout, function() use ($promise){
                     $this->close();
-                    $promise->reject(ServerConst::ERR_MYSQL_TIMEOUT);
+                    $promise->reject(ServerConst::ERR_MYSQL_CONNECT_TIMEOUT);
                 });
                 $this->db->connect($this->conf, function($db, $r) use ($promise,$timeId) {
-                    swoole_timer_clear($timeId);
+                    swoole_timer_clear($timeId); //连接返回,清除超时检查
                     if ($r === false) {
-                        SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error(sprintf("ASYNC MySQL Connect Failed [%d]: %s", $db->connect_errno, $db->connect_error));
+                        $this->open_log && SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error(sprintf("ASYNC MySQL Connect Failed [%d]: %s", $db->connect_errno, $db->connect_error));
                         $promise->reject(ServerConst::ERR_MYSQL_CONNECT_FAILED);
                         return;
                     }
@@ -148,7 +151,7 @@ class Mysql {
                 $this->link = new \mysqli($dbHost, $dbUser, $dbPwd, $dbName);
 
                 if ($this->link->connect_error) {
-                    SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error(sprintf("SYNC MySQL Connect Failed [%d]: %s", $this->link->connect_errno, $this->link->connect_error));
+                    $this->open_log && SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error(sprintf("SYNC MySQL Connect Failed [%d]: %s", $this->link->connect_errno, $this->link->connect_error));
                     $promise->reject(ServerConst::ERR_MYSQL_CONNECT_FAILED);
                     break;
                 }
@@ -193,53 +196,54 @@ class Mysql {
     /**
      * 执行SQL请求
      * @param $sql          string      SQL语句
-     * @param $get_one      bool        查询1条记录
+     * @param $getOne       bool        查询1条记录
      * @param $timeout      int         超时时间, 单位ms
      * @return Promise                  Promise对象
      */
-    public function execute($sql, $get_one, $timeout=3000) {
+    public function execute($sql, $getOne, $timeout=3000) {
         $promise = new Promise();
         switch ($this->mode) {
             case ServerConst::MODE_ASYNC : {
                 $timeId = swoole_timer_after($timeout, function() use ($promise, $sql){
-                    SwooleServer::isOpenLoger() && SwooleServer::getLogger()->warning("ASYNC MySQL timeout", [$sql, -1, "timeout"]);
+                    $this->open_log && SwooleServer::isOpenLoger() && SwooleServer::getLogger()->warning("ASYNC MySQL timeout", [$sql, -1, "timeout"]);
                     $this->inPool();
                     $promise->resolve([
-                        'code' => ServerConst::ERR_MYSQL_TIMEOUT,
+                        'code' => ServerConst::ERR_MYSQL_QUERY_TIMEOUT,
                     ]);
                 });
                 $time = CommonHelper::getMillisecond();
-                $this->db->query($sql, function($db, $result) use ($sql, $promise, $timeId, $get_one, $time){
+                $this->db->query($sql, function($db, $result) use ($sql, $promise, $timeId, $getOne, $time){
                     $this->inPool();
-                    swoole_timer_clear($timeId);
+                    swoole_timer_clear($timeId); //查询返回,清除超时检查
                     if($result === false) {
-                        SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error("ASYNC MySQL err", [$sql, $db->errno, $db->error]);
+                        $this->open_log && SwooleServer::isOpenLoger() && SwooleServer::getLogger()->error("ASYNC MySQL err", [$sql, $db->errno, $db->error]);
                         $promise->resolve([
                             'code'  => ServerConst::ERR_MYSQL_QUERY_FAILED,
                             'errno' => $db->errno
                         ]);
                     } else {
-                        if($this->open_log) {
+                        if($this->open_log && SwooleServer::isOpenLoger()) {
                             $time = CommonHelper::getMillisecond() - $time;
                             if($time > $this->slow_query) {
-                                SwooleServer::isOpenLoger() && SwooleServer::getLogger()->info("ASYNC MySQL execute time[slow_query]", [$time, $sql]);
-                            }else{
-                                SwooleServer::isOpenLoger() && SwooleServer::getLogger()->info("ASYNC MySQL execute time", [$time, $sql]);
+                                SwooleServer::getLogger()->info("ASYNC MySQL execute time[slow_query]", [$time, $sql]);
+                            }elseif(SwooleServer::isOpenDebug()){
+                                SwooleServer::getLogger()->info("ASYNC MySQL execute time", [$time, $sql]);
                             }
                         }
-                        if($result === true) {
+                        if($result === true) { //insert,detele,update
                             $promise->resolve([
                                 'code'          => ServerConst::ERR_SUCCESS,
                                 'affected_rows' => $db->affected_rows,
                                 'insert_id'     => $db->insert_id
                             ]);
-                        } else {
+                        } else { //select
                             $promise->resolve([
                                 'code'  => ServerConst::ERR_SUCCESS,
-                                'data'  => empty($result) ? [] : ($get_one ? $result[0] :$result)
+                                'data'  => empty($result) ? [] : ($getOne ? $result[0] :$result)
                             ]);
                         }
                     }
+                    unset($db, $result);
                 });
                 break;
             }
@@ -247,10 +251,10 @@ class Mysql {
             case ServerConst::MODE_SYNC : {
                 $time = CommonHelper::getMillisecond();
                 $result = $this->link->query($sql);
+                //2006 - MySQL server has gone away
                 if($this->link->errno == 2006) {
                     $this->close();
                     $this->connect($this->id);
-                    $time = CommonHelper::getMillisecond();
                     $result = $this->link->query($sql);
                 }
                 if($result === false) {
@@ -260,12 +264,12 @@ class Mysql {
                         'errno' => $this->link->errno
                     ]);
                 } else {
-                    if($this->open_log) {
+                    if($this->open_log && SwooleServer::isOpenLoger()) {
                         $time = CommonHelper::getMillisecond() - $time;
                         if($time > $this->slow_query) {
-                            SwooleServer::isOpenLoger() && SwooleServer::getLogger()->info("SYNC MySQL execute time[slow_query]", [$time, $sql]);
-                        }else{
-                            SwooleServer::isOpenLoger() && SwooleServer::getLogger()->info("SYNC MySQL execute time", [$time, $sql]);
+                            SwooleServer::getLogger()->info("SYNC MySQL execute time[slow_query]", [$time, $sql]);
+                        }elseif(SwooleServer::isOpenDebug()){
+                            SwooleServer::getLogger()->info("SYNC MySQL execute time", [$time, $sql]);
                         }
                     }
                     if($result === true) {
@@ -278,14 +282,15 @@ class Mysql {
                         $result_arr = $result->fetch_all(\MYSQLI_ASSOC);
                         $promise->resolve([
                             'code'  => ServerConst::ERR_SUCCESS,
-                            'data'  => empty($result_arr) ? [] : ($get_one ? $result_arr[0] : $result_arr)
+                            'data'  => empty($result_arr) ? [] : ($getOne ? $result_arr[0] : $result_arr)
                         ]);
+                        unset($result_arr);
                     }
                 }
                 break;
             }
         }
-
+        unset($sql);
         return $promise;
     }
 

@@ -123,14 +123,16 @@ class Redis {
     /**
      * 建立Redis连接
      * @param $id           int     连接ID
-     * @param $timeout      int     超时时间, 单位ms
+     * @param $timeout      int     超时时间,秒
      * @return Promise              Promise对象
      */
-    public function connect($id, $timeout = 3000) {
+    public function connect($id, $timeout = 3) {
         $this->id = $id;
         $promise = new Promise();
-        switch ($this->mode) {
+        if(empty($timeout)) $timeout = 3;
+        $timeout = $timeout * 1000; //转为毫秒
 
+        switch ($this->mode) {
             //异步连接
             case ServerConst::MODE_ASYNC : {
                 $this->db = new \swoole_redis();
@@ -146,7 +148,7 @@ class Redis {
                 });
                 $this->db->connect($this->conf['host'], $this->conf['port'],
                     function (\swoole_redis $client, $result) use($timeId,$promise){
-                        \swoole_timer_clear($timeId);
+                        swoole_timer_clear($timeId);
                         if( $result === false ) {
                             $proRes = [
                                 'code'      => ServerConst::ERR_REDIS_CONNECT_FAILED,
@@ -200,15 +202,26 @@ class Redis {
                             'errMsg'    => $this->link->getLastError(),
                         ]);
                     }
-                    if( isset($this->conf['auth']) && !empty($this->conf['auth'])) {
-                        $this->link->auth($this->conf['auth']);
+
+                    if($result && isset($this->conf['auth']) && !empty($this->conf['auth'])) {
+                        $result = $this->link->auth($this->conf['auth']);
+                        if( !$result ) {
+                            $promise->resolve([
+                                'code'      => ServerConst::ERR_REDIS_CONNECT_FAILED,
+                                'errCode'   => -1,
+                                'errMsg'    => $this->link->getLastError(),
+                            ]);
+                        }
                     }
-                    if($this->conf['prefix']) $this->link->setOption(\Redis::OPT_PREFIX, $this->conf['prefix']);
-                    $this->link->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
-                    $this->link->select($this->conf['select']);
-                    $promise->resolve([
-                        'code'  => ServerConst::ERR_SUCCESS
-                    ]);
+
+                    if($result) {
+                        if($this->conf['prefix']) $this->link->setOption(\Redis::OPT_PREFIX, $this->conf['prefix']);
+                        $this->link->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
+                        $this->link->select($this->conf['select']);
+                        $promise->resolve([
+                            'code'  => ServerConst::ERR_SUCCESS
+                        ]);
+                    }
                 }catch (\RedisException $e) {
                     $proRes = [
                         'code'      => ServerConst::ERR_REDIS_CONNECT_FAILED,
@@ -243,7 +256,6 @@ class Redis {
         //echo " redis _call mode:$this->mode \r\n";
 
         switch ($this->mode) {
-
             //异步
             case ServerConst::MODE_ASYNC : {
                 $this->inPool();
@@ -272,7 +284,7 @@ class Redis {
 
                 $index = count($arguments);
                 $arguments[$index] = function (\swoole_redis $client, $result) use ($timeId, $promise, $arguments){
-                    \swoole_timer_clear($timeId);
+                    swoole_timer_clear($timeId);
                     if( $result === false ) {
                         $proRes = [
                             'code'      => ServerConst::ERR_REDIS_ERROR,
@@ -311,6 +323,7 @@ class Redis {
             }
         }
 
+        unset($name, $arguments, $result);
         return $promise;
     }
 

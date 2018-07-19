@@ -24,15 +24,17 @@ class Mysql extends Adapter {
     private $sync;
 
     /**
+     * 上次同步连接的时间
      * @var int
      */
-    private $sync_first_connect_time;
+    private $sync_first_connect_time = 0;
 
     public function __construct($conf) {
         $this->conf = $conf;
         $this->conf['name'] = $conf['name'] ?? __FILE__;
         $this->conf['size'] = $conf['size'] ?? 5;
         parent::__construct($this->conf['name'], $this->conf['size']);
+        unset($conf);
     }
 
 
@@ -57,7 +59,9 @@ class Mysql extends Adapter {
         }
 
         $this->sync = new Driver($this->conf['args'], ServerConst::MODE_SYNC);
-        $this->sync->connect(0);
+
+        $connTimeout = $this->conf['conn_timeout'] ?? 0;
+        $this->sync->connect(0, $connTimeout);
         $this->sync_first_connect_time = time();
 
         return $this->sync;
@@ -83,8 +87,11 @@ class Mysql extends Adapter {
             $this->waiting_tasks->enqueue($promise);
             return $promise;
         }else {
-            $expireTime = time() - ($this->conf['args']['wait_timeout'] ?? 3600);
-            if(($expireTime && $this->sync_first_connect_time<$expireTime)) {
+            $now = time();
+            $waitTimeout = $this->conf['args']['wait_timeout'] ?? 3600;
+            $maxTime = $this->sync_first_connect_time + $waitTimeout;
+
+            if(empty($this->sync_first_connect_time) || !($now>=$this->sync_first_connect_time && $now<$maxTime)) {
                 $this->reconnSync();
             }
 
@@ -104,6 +111,7 @@ class Mysql extends Adapter {
         }, function() use ($id){
             $this->newItem($id);
         });
+        unset($driver);
     }
 
 
@@ -111,6 +119,8 @@ class Mysql extends Adapter {
         $promise = $this->waiting_tasks->dequeue();
         $driver = $this->idle_queue->dequeue();
         $promise->resolve($driver);
+
+        unset($promise, $driver);
     }
 
 

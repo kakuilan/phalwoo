@@ -99,6 +99,7 @@ class TimerTaskManager extends LkkService {
      * @return mixed
      */
     protected function getCronExpre(string $expres) {
+        $expres = trim($expres);
         $key = md5($expres);
 
         if(!isset($this->cronExpres[$key])) {
@@ -184,6 +185,7 @@ class TimerTaskManager extends LkkService {
 
             break;
         }
+        unset($taskProperty);
 
         return $taskData;
     }
@@ -208,6 +210,7 @@ class TimerTaskManager extends LkkService {
 
                 $taskNum++;
             }
+            unset($taskData);
         }
 
         //echo "loaded timer tasks total:[$taskNum]\r\n";
@@ -262,6 +265,7 @@ class TimerTaskManager extends LkkService {
             if($workerPid && $workerPid==$this->workerPid) {
                 swoole_timer_clear($timerId);
             }
+            unset($shareTable);
         }
 
         return $res;
@@ -324,6 +328,7 @@ class TimerTaskManager extends LkkService {
                 $res = SwooleServer::getServer()->task($taskData);
                 if($res) $succeNum++;
             }
+            unset($taskData);
         }
 
         //echo "delivery timer tasks total:[$totalNum] sucess:[$succeNum]\r\n";

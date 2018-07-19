@@ -20,7 +20,7 @@ class SwooleLogger extends Monologger {
 
     public static $maxFileSize   = 20971520; //日志文件大小限制20M
     public static $maxRecords    = 128; //最多N条日志记录
-    public static $maxFileNum    = 20; //要保留的日志文件的最大数量,默认是零,即,无限个文件
+    public static $maxFileNum    = 20; //要保留的日志文件的最大数量,默认是0无限制
 
     protected $logFile;
     protected $defaultHandler;

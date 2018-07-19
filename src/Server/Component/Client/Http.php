@@ -124,6 +124,8 @@ class Http {
                 'status'    => $cli->statusCode
             ]);
         });
+        unset($path);
+
         return $promise;
     }
 
@@ -152,6 +154,8 @@ class Http {
                 'status'    => $cli->statusCode
             ]);
         });
+        unset($path, $data);
+
         return $promise;
     }
 
@@ -177,6 +181,8 @@ class Http {
                 'status'    => $cli->statusCode
             ]);
         });
+        unset($path);
+
         return $promise;
     }
 

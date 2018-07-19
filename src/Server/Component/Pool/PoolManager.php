@@ -41,6 +41,7 @@ class PoolManager extends LkkService {
             $item['name'] = $name;
             $this->conf[$name] = $item;
         }
+        unset($conf);
 
         return true;
     }

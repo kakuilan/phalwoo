@@ -255,7 +255,7 @@ class Redis extends Adapter {
             'lefttime' => ($this->_lefttime>120 ? $this->_lefttime : $lefttime),
         ];
 
-        //将session数据放入队列
+        //将session数据放入channel通道队列,然后其他进程再读取写入redis
         $sessionQueue = SwooleServer::getSessionQueue();
         $sessionQueue->push($workData);
 
