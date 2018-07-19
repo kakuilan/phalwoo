@@ -30,11 +30,6 @@ class Redis {
      */
     private $db;
 
-    /**
-     * 超时时间
-     * @var int
-     */
-    private $timeout = 3000;
 
     /**
      * 所属连接池
@@ -70,6 +65,20 @@ class Redis {
 
 
     /**
+     * 连接超时时间,秒
+     * @var int|mixed
+     */
+    private $conn_timeout = 3;
+
+
+    /**
+     * 查询超时时间,秒
+     * @var int|mixed
+     */
+    private $exec_timeout = 2.5;
+
+
+    /**
      * Redis constructor.
      * @param $config       array       配置选项
      * @param $mode         int         模式(ServerConst中的MODE常量)
@@ -77,6 +86,10 @@ class Redis {
     public function __construct($config,  $mode = ServerConst::MODE_ASYNC) {
         $this->conf = $config;
         $this->mode = $mode;
+
+        if(isset($config['conn_timeout']) && $config['conn_timeout']>0) $this->conn_timeout = $config['conn_timeout'];
+        if(isset($config['exec_timeout']) && $config['exec_timeout']>0) $this->exec_timeout = $config['exec_timeout'];
+
     }
 
 
@@ -126,10 +139,10 @@ class Redis {
      * @param $timeout      int     超时时间,秒
      * @return Promise              Promise对象
      */
-    public function connect($id, $timeout = 3) {
+    public function connect($id, $timeout = 0) {
         $this->id = $id;
         $promise = new Promise();
-        if(empty($timeout)) $timeout = 3;
+        if(empty($timeout)) $timeout = $this->conn_timeout;
         $timeout = $timeout * 1000; //转为毫秒
 
         switch ($this->mode) {
@@ -259,7 +272,7 @@ class Redis {
             //异步
             case ServerConst::MODE_ASYNC : {
                 $this->inPool();
-                $timeId = swoole_timer_after($this->timeout, function() use ($promise){
+                $timeId = swoole_timer_after($this->exec_timeout *1000, function() use ($promise){
                     $this->close();
                     $promise->resolve([
                         'code'  => ServerConst::ERR_REDIS_TIMEOUT
@@ -334,7 +347,10 @@ class Redis {
      * @return Redis                返回当前对象
      */
     public function setTimeout($timeout) {
-        $this->timeout = $timeout;
+        if($timeout>0) {
+            $this->conn_timeout = $this->exec_timeout = $timeout;
+        }
+
         return $this;
     }
 

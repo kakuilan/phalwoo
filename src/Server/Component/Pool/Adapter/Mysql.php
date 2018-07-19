@@ -59,9 +59,7 @@ class Mysql extends Adapter {
         }
 
         $this->sync = new Driver($this->conf['args'], ServerConst::MODE_SYNC);
-
-        $connTimeout = $this->conf['conn_timeout'] ?? 0;
-        $this->sync->connect(0, $connTimeout);
+        $this->sync->connect(0);
         $this->sync_first_connect_time = time();
 
         return $this->sync;

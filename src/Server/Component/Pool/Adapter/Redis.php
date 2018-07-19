@@ -85,7 +85,9 @@ class Redis extends Adapter {
             return ($driver instanceof Driver) ? $driver : $this->sync;
         } else {
             $now = time();
-            $waitTimeout = $this->conf['args']['wait_timeout'] ?? 3600;
+            $socketTimeout = ini_get('default_socket_timeout');
+            $waitTimeout = $this->conf['args']['wait_timeout'] ?? 1800;
+            if($socketTimeout) $waitTimeout = min($socketTimeout, $waitTimeout);
             $maxTime = $this->sync_first_connect_time + $waitTimeout;
 
             if(empty($this->sync_first_connect_time) || !($now>=$this->sync_first_connect_time && $now<$maxTime)) {

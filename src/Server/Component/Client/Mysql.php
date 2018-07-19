@@ -82,6 +82,20 @@ class Mysql {
 
 
     /**
+     * 连接超时时间,秒
+     * @var int|mixed
+     */
+    private $conn_timeout = 3;
+
+
+    /**
+     * 查询超时时间,秒
+     * @var int|mixed
+     */
+    private $exec_timeout = 2;
+
+
+    /**
      * MySQL constructor.
      * @param $config       array       配置选项
      * @param $mode         int         模式(<b>ServerConst</b>中的<b>MODE</b>常量)
@@ -91,6 +105,9 @@ class Mysql {
         $this->mode     = $mode;
         $this->open_log = $config['open_log'] ?? false;
         $this->slow_query = $config['slow_query'] ?? 20;
+
+        if(isset($config['conn_timeout']) && $config['conn_timeout']>0) $this->conn_timeout = $config['conn_timeout'];
+        if(isset($config['exec_timeout']) && $config['exec_timeout']>0) $this->exec_timeout = $config['exec_timeout'];
 
         unset($config);
     }
@@ -111,10 +128,10 @@ class Mysql {
      * @param $timeout      int     超时时间,秒
      * @return Promise              Promise对象
      */
-    public function connect($id, $timeout=3) {
+    public function connect($id, $timeout=0) {
         $this->id = $id;
         $promise = new Promise();
-        if(empty($timeout)) $timeout = 3;
+        if(empty($timeout)) $timeout = $this->conn_timeout;
         $timeout = $timeout * 1000; //转为毫秒
 
         switch ($this->mode) {
@@ -197,10 +214,13 @@ class Mysql {
      * 执行SQL请求
      * @param $sql          string      SQL语句
      * @param $getOne       bool        查询1条记录
-     * @param $timeout      int         超时时间, 单位ms
+     * @param $timeout      int         超时时间,秒
      * @return Promise                  Promise对象
      */
-    public function execute($sql, $getOne, $timeout=3000) {
+    public function execute($sql, $getOne, $timeout=0) {
+        if(empty($timeout)) $timeout = $this->exec_timeout;
+        $timeout = $timeout * 1000; //转为毫秒
+
         $promise = new Promise();
         switch ($this->mode) {
             case ServerConst::MODE_ASYNC : {
