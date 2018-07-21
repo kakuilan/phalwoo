@@ -231,13 +231,13 @@ class Application extends PhApp {
         $possibleResponse = yield $dispatcher->getReturnedValue();
 
         $response =$dependencyInjector->getShared("response");
-        $isJson = $response->isJson();
+        $hasView = $response->hasView();
 
         /**
          * Returning false from an action cancels the view
          */
-        if((is_bool($possibleResponse) && $possibleResponse===false) || $isJson) {
-            if($isJson) {
+        if((is_bool($possibleResponse) && $possibleResponse===false) || !$hasView) {
+            if(!$hasView) { //无需渲染视图
                 $response->setContent($debug . $response->getContent());
             }
         }else{

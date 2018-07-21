@@ -94,6 +94,13 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
 
 
     /**
+     * 是否要渲染视图
+     * @var bool
+     */
+    protected $_hasView = true;
+
+
+    /**
      * 是否跳转的动作
      * @var bool
      */
@@ -461,7 +468,7 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
      * 设置返回结果是否json
      * @param bool $status
      */
-    public function setJsonStatus($status=false) {
+    public function setIsJson($status=false) {
         $this->_isJson = boolval($status);
     }
 
@@ -473,6 +480,26 @@ class Response extends PhalconResponse implements ResponseInterface , InjectionA
     public function isJson() {
         return $this->_isJson;
     }
+
+
+    /**
+     * 设置是否渲染视图
+     * @param bool $status
+     */
+    public function setHasView($status=false) {
+        $this->_hasView = boolval($status);
+    }
+
+
+    /**
+     * 是否渲染视图
+     * @return bool
+     */
+    public function hasView() {
+        return $this->_hasView;
+    }
+
+
 
 
 }
